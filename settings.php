@@ -25,7 +25,56 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($ADMIN->fulltree) {
-   // TODO: Define the plugin settings page.
-   // https://docs.moodle.org/dev/Admin_settings
+if ($hassiteconfig) {
+    $options = [];
+
+    $settings->add(new admin_setting_configselect('fileconverter_googledrive/issuerid',
+        get_string('issuer', 'fileconverter_googledrive'),
+        get_string('issuer_help', 'fileconverter_googledrive'),
+        '',
+        $options));
+
+    // Basic settings.
+    $mform->addElement('header', 'settingheader', get_string('settings:aws:header', 'fileconverter_librelambda'));
+
+    $regionoptions = array(
+        'us-east-1'      => 'us-east-1 (N. Virginia)',
+        'us-east-2'      => 'us-east-2 (Ohio)',
+        'us-west-1'      => 'us-west-1 (N. California)',
+        'us-west-2'      => 'us-west-2 (Oregon)',
+        'ap-northeast-1' => 'ap-northeast-1 (Tokyo)',
+        'ap-northeast-2' => 'ap-northeast-2 (Seoul)',
+        'ap-northeast-3' => 'ap-northeast-3 (Osaka)',
+        'ap-south-1'     => 'ap-south-1 (Mumbai)',
+        'ap-southeast-1' => 'ap-southeast-1 (Singapore)',
+        'ap-southeast-2' => 'ap-southeast-2 (Sydney)',
+        'ca-central-1'   => 'ca-central-1 (Canda Central)',
+        'cn-north-1'     => 'cn-north-1 (Beijing)',
+        'cn-northwest-1' => 'cn-northwest-1 (Ningxia)',
+        'eu-central-1'   => 'eu-central-1 (Frankfurt)',
+        'eu-west-1'      => 'eu-west-1 (Ireland)',
+        'eu-west-2'      => 'eu-west-2 (London)',
+        'eu-west-3'      => 'eu-west-3 (Paris)',
+        'sa-east-1'      => 'sa-east-1 (Sao Paulo)'
+    );
+
+    $mform->addElement('text', 'api_key', get_string('settings:aws:key', 'fileconverter_librelambda'));
+    $mform->addHelpButton('api_key', 'settings:aws:key', 'fileconverter_librelambda');
+    $mform->setType("api_key", PARAM_TEXT);
+
+    $mform->addElement('passwordunmask', 'api_secret', get_string('settings:aws:secret', 'fileconverter_librelambda'), array('size' => 40));
+    $mform->addHelpButton('api_secret', 'settings:aws:secret', 'fileconverter_librelambda');
+    $mform->setType("api_secret", PARAM_TEXT);
+
+    $mform->addElement('text', 's3_input_bucket', get_string('settings:aws:input_bucket', 'fileconverter_librelambda'));
+    $mform->addHelpButton('s3_input_bucket', 'settings:aws:bucket', 'fileconverter_librelambda');
+    $mform->setType("s3_input_bucket", PARAM_TEXT);
+
+    $mform->addElement('text', 's3_output_bucket', get_string('settings:aws:output_bucket', 'fileconverter_librelambda'));
+    $mform->addHelpButton('s3_output_bucket', 'settings:aws:bucket', 'fileconverter_librelambda');
+    $mform->setType("s3_output_bucket", PARAM_TEXT);
+
+    $mform->addElement('select', 'api_region', get_string('settings:aws:region', 'fileconverter_librelambda'), $regionoptions);
+    $mform->addHelpButton('api_region', 'settings:aws:region', 'fileconverter_librelambda');
+
 }
