@@ -38,7 +38,6 @@ use \core_files\conversion;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class converter implements \core_files\converter_interface {
-
     /** @var array $imports List of supported import file formats */
     private static $imports = [
         'doc' => 'application/msword',
@@ -57,11 +56,73 @@ class converter implements \core_files\converter_interface {
     ];
 
     /**
+     *
+     * @var unknown
+     */
+    private $config;
+
+    /**
+     *
+     * @var unknown
+     */
+    private $client;
+
+    public function __construct(){
+        parent::__construct();
+        $this->config = get_config('fileconverter_librelambda');
+    }
+
+    public function create_client(){
+        $this->client = new \Aws\S3\S3Client ( [
+                'version' => 'latest',
+                'region' => $this->config->api_region,
+                'credentials' => [
+                        'key' => $this->config->api_key,
+                        'secret' => $this->config->api_secret
+                ]
+        ]);
+
+        return $this->client;
+    }
+
+    /**
+     * Check if the plugin has the required configuration set.
+     *
+     * @return boolean $isset Is all configuration options set.
+     */
+    private static function is_config_set() {
+        $isset = true;
+
+        if (empty($this->config->api_key) ||
+                empty($this->config->api_secret) ||
+                empty($this->config->s3_input_bucket) ||
+                empty($this->config->s3_output_bucket) ||
+                empty($this->config->api_region)) {
+            $isset = false;
+        }
+        return $isset;
+    }
+
+    private function test_bucket_access() {
+
+    }
+
+    /**
      * Whether the plugin is configured and requirements are met.
      *
      * @return  bool
      */
     public static function are_requirements_met() {
+        // First check that we have the basic configuration settings set.
+        if (!self::is_config_set()) {
+            return false;
+        }
+
+
+        // Check that we can access the S3 Buckets.
+        // Check input bucket write capability.
+        // Check output bucket read capability.
+        // Check output bucket delete capability.
 
         return true;
     }
