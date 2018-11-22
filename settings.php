@@ -26,16 +26,27 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    $options = [];
 
-    $settings->add(new admin_setting_configselect('fileconverter_googledrive/issuerid',
-        get_string('issuer', 'fileconverter_googledrive'),
-        get_string('issuer_help', 'fileconverter_googledrive'),
-        '',
-        $options));
+   // Basic settings.
+    $settings->add(new admin_setting_configtext('fileconverter_librelambda/api_key',
+            get_string('settings:aws:key', 'fileconverter_librelambda'),
+            get_string('settings:aws:key_help', 'fileconverter_librelambda'),
+            ''));
 
-    // Basic settings.
-    $mform->addElement('header', 'settingheader', get_string('settings:aws:header', 'fileconverter_librelambda'));
+    $settings->add(new admin_setting_configpasswordunmask('fileconverter_librelambda/api_secret',
+            get_string('settings:aws:secret', 'fileconverter_librelambda'),
+            get_string('settings:aws:secret_help', 'fileconverter_librelambda'),
+            ''));
+
+    $settings->add(new admin_setting_configtext('fileconverter_librelambda/s3_input_bucket',
+            get_string('settings:aws:input_bucket', 'fileconverter_librelambda'),
+            get_string('settings:aws:input_bucket_help', 'fileconverter_librelambda'),
+            ''));
+
+    $settings->add(new admin_setting_configtext('fileconverter_librelambda/s3_output_bucket',
+            get_string('settings:aws:output_bucket', 'fileconverter_librelambda'),
+            get_string('settings:aws:output_bucket_help', 'fileconverter_librelambda'),
+            ''));
 
     $regionoptions = array(
         'us-east-1'      => 'us-east-1 (N. Virginia)',
@@ -58,23 +69,9 @@ if ($hassiteconfig) {
         'sa-east-1'      => 'sa-east-1 (Sao Paulo)'
     );
 
-    $mform->addElement('text', 'api_key', get_string('settings:aws:key', 'fileconverter_librelambda'));
-    $mform->addHelpButton('api_key', 'settings:aws:key', 'fileconverter_librelambda');
-    $mform->setType("api_key", PARAM_TEXT);
-
-    $mform->addElement('passwordunmask', 'api_secret', get_string('settings:aws:secret', 'fileconverter_librelambda'), array('size' => 40));
-    $mform->addHelpButton('api_secret', 'settings:aws:secret', 'fileconverter_librelambda');
-    $mform->setType("api_secret", PARAM_TEXT);
-
-    $mform->addElement('text', 's3_input_bucket', get_string('settings:aws:input_bucket', 'fileconverter_librelambda'));
-    $mform->addHelpButton('s3_input_bucket', 'settings:aws:bucket', 'fileconverter_librelambda');
-    $mform->setType("s3_input_bucket", PARAM_TEXT);
-
-    $mform->addElement('text', 's3_output_bucket', get_string('settings:aws:output_bucket', 'fileconverter_librelambda'));
-    $mform->addHelpButton('s3_output_bucket', 'settings:aws:bucket', 'fileconverter_librelambda');
-    $mform->setType("s3_output_bucket", PARAM_TEXT);
-
-    $mform->addElement('select', 'api_region', get_string('settings:aws:region', 'fileconverter_librelambda'), $regionoptions);
-    $mform->addHelpButton('api_region', 'settings:aws:region', 'fileconverter_librelambda');
-
+    $settings->add(new admin_setting_configselect('fileconverter_librelambda/api_region',
+            get_string('settings:aws:region', 'fileconverter_librelambda'),
+            get_string('settings:aws:region_help', 'fileconverter_librelambda'),
+            'ap-southeast-2',
+            $regionoptions));
 }
