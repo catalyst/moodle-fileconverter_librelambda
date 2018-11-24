@@ -42,11 +42,12 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
      * Test is_config_set method with missing configuration.
      */
     public function test_is_config_set_false() {
+        $converter = new \fileconverter_librelambda\converter();
 
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_config_set');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter);
+        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
 
         $this->assertFalse($result);
     }
@@ -63,12 +64,26 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         set_config('s3_output_bucket', 'bucket2', 'fileconverter_librelambda');
         set_config('api_region', 'ap-southeast-2', 'fileconverter_librelambda');
 
+        $converter = new \fileconverter_librelambda\converter();
+
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_config_set');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter);
+        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
 
         $this->assertTrue($result);
+    }
+
+    public function test_is_bucket_accessible() {
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client();
+
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_bucket_accessible');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
+
+        $this->assertFalse($result->success);
     }
 
 

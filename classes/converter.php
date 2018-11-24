@@ -25,10 +25,14 @@ namespace fileconverter_librelambda;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
+
 use stored_file;
 use moodle_exception;
 use moodle_url;
 use \core_files\conversion;
+use Aws\S3\S3Client;
+use Aws\S3\Exception\S3Exception;
 
 /**
  * Class for converting files between different formats using unoconv.
@@ -57,23 +61,29 @@ class converter implements \core_files\converter_interface {
 
     /**
      *
-     * @var unknown
+     * @var object Plugin confiuration.
      */
     private $config;
 
     /**
      *
-     * @var unknown
+     * @var \Aws\S3\S3Client S3 client.
      */
     private $client;
 
+    /**
+     * Class constructor
+     */
     public function __construct(){
-        parent::__construct();
         $this->config = get_config('fileconverter_librelambda');
     }
 
+    /**
+     *
+     * @return \Aws\S3\S3Client
+     */
     public function create_client(){
-        $this->client = new \Aws\S3\S3Client ( [
+        $this->client = new S3Client ( [
                 'version' => 'latest',
                 'region' => $this->config->api_region,
                 'credentials' => [
@@ -85,26 +95,69 @@ class converter implements \core_files\converter_interface {
         return $this->client;
     }
 
+    private function get_exception_details($exception) {
+        $message = $exception->getMessage();
+
+        if (get_class($exception) !== 'S3Exception') {
+            return "Not a S3 exception : $message";
+        }
+
+        $errorcode = $exception->getAwsErrorCode();
+
+        $details = ' ';
+
+        if ($message) {
+            $details .= "ERROR MSG: " . $message . "\n";
+        }
+
+        if ($errorcode) {
+            $details .= "ERROR CODE: " . $errorcode . "\n";
+        }
+
+        return $details;
+    }
+
     /**
      * Check if the plugin has the required configuration set.
      *
      * @return boolean $isset Is all configuration options set.
      */
-    private static function is_config_set() {
+    private static function is_config_set(\fileconverter_librelambda\converter $converter) {
         $isset = true;
 
-        if (empty($this->config->api_key) ||
-                empty($this->config->api_secret) ||
-                empty($this->config->s3_input_bucket) ||
-                empty($this->config->s3_output_bucket) ||
-                empty($this->config->api_region)) {
-            $isset = false;
+        if (empty($converter->config->api_key) ||
+            empty($converter->config->api_secret) ||
+            empty($converter->config->s3_input_bucket) ||
+            empty($converter->config->s3_output_bucket) ||
+            empty($converter->config->api_region)) {
+                $isset = false;
         }
         return $isset;
     }
 
-    private function test_bucket_access() {
+    /**
+     * Tests connection to S3 and bucket.
+     * There is no check connection in the AWS API.
+     * We use list buckets instead and check the bucket is in the list.
+     *
+     * @return boolean true on success, false on failure.
+     */
+    private static function is_bucket_accessible(\fileconverter_librelambda\converter $converter) {
+        $connection = new \stdClass();
+        $connection->success = true;
+        $connection->message = '';
 
+        try {
+            $result = $converter->client->headBucket(array(
+                'Bucket' => $converter->config->s3_input_bucket));
+
+            $connection->message = get_string('settings:connectionsuccess', 'tool_objectfs');
+        } catch (S3Exception $e) {
+            $connection->success = false;
+            $details = $converter->get_exception_details($e);
+            $connection->message = get_string('settings:connectionfailure', 'tool_objectfs') . $details;
+        }
+        return $connection;
     }
 
     /**
@@ -113,13 +166,20 @@ class converter implements \core_files\converter_interface {
      * @return  bool
      */
     public static function are_requirements_met() {
+        $converter = new \fileconverter_librelambda\converter();
         // First check that we have the basic configuration settings set.
-        if (!self::is_config_set()) {
+        if (!self::is_config_set($converter)) {
             return false;
         }
 
+        $converter->create_client();
 
         // Check that we can access the S3 Buckets.
+        $connection = self::is_bucket_accessible($converter);
+        if (!$connection->success) {
+            return false;
+        }
+
         // Check input bucket write capability.
         // Check output bucket read capability.
         // Check output bucket delete capability.
