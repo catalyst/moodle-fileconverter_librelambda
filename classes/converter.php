@@ -82,15 +82,21 @@ class converter implements \core_files\converter_interface {
      *
      * @return \Aws\S3\S3Client
      */
-    public function create_client(){
-        $this->client = new S3Client ( [
-                'version' => 'latest',
-                'region' => $this->config->api_region,
-                'credentials' => [
-                        'key' => $this->config->api_key,
-                        'secret' => $this->config->api_secret
-                ]
-        ]);
+    public function create_client($handler=null){
+        $connectionoptions = array(
+            'version' => 'latest',
+            'region' => $this->config->api_region,
+            'credentials' => [
+                'key' => $this->config->api_key,
+                'secret' => $this->config->api_secret
+            ]);
+
+        // Allow handler overriding for testing.
+        if ($handler!=null) {
+            $connectionoptions['handler'] = $handler;
+        }
+
+        $this->client = new S3Client($connectionoptions);
 
         return $this->client;
     }
@@ -151,14 +157,72 @@ class converter implements \core_files\converter_interface {
             $result = $converter->client->headBucket(array(
                 'Bucket' => $converter->config->s3_input_bucket));
 
-            $connection->message = get_string('settings:connectionsuccess', 'tool_objectfs');
+            $connection->message = get_string('settings:connectionsuccess', 'fileconverter_librelambda');
         } catch (S3Exception $e) {
             $connection->success = false;
             $details = $converter->get_exception_details($e);
-            $connection->message = get_string('settings:connectionfailure', 'tool_objectfs') . $details;
+            $connection->message = get_string('settings:connectionfailure', 'fileconverter_librelambda') . $details;
         }
         return $connection;
     }
+
+    /**
+     * Tests connection to S3 and bucket.
+     * There is no check connection in the AWS API.
+     * We use list buckets instead and check the bucket is in the list.
+     *
+     * @return boolean true on success, false on failure.
+     */
+    private static function have_bucket_permissions(\fileconverter_librelambda\converter $converter, $bucket) {
+        $permissions = new \stdClass();
+        $permissions->success = true;
+        $permissions->messages = array();
+
+        try {
+            $result = $converter->client->putObject(array(
+                'Bucket' => $bucket,
+                'Key' => 'permissions_check_file',
+                'Body' => 'test content'));
+        } catch (S3Exception $e) {
+            $details = $converter->get_exception_details($e);
+            $permissions->messages[] = get_string('settings:writefailure', 'tool_objectfs') . $details;
+            $permissions->success = false;
+        }
+
+        try {
+            $result = $converter->client->getObject(array(
+                'Bucket' => $bucket,
+                'Key' => 'permissions_check_file'));
+        } catch (S3Exception $e) {
+            $errorcode = $e->getAwsErrorCode();
+            // Write could have failed.
+            if ($errorcode !== 'NoSuchKey') {
+                $details = $converter->get_exception_details($e);
+                $permissions->messages[] = get_string('settings:readfailure', 'tool_objectfs') . $details;
+                $permissions->success = false;
+            }
+        }
+
+        try {
+            $result = $converter->client->deleteObject(array(
+                'Bucket' => $bucket,
+                'Key' => 'permissions_check_file'));
+            $permissions->messages[] = get_string('settings:deletesuccess', 'tool_objectfs');
+        } catch (S3Exception $e) {
+            $errorcode = $e->getAwsErrorCode();
+            // Something else went wrong.
+            if ($errorcode !== 'AccessDenied') {
+                $details = $converter->get_exception_details($e);
+                $permissions->messages[] = get_string('settings:deleteerror', 'tool_objectfs') . $details;
+            }
+        }
+
+        if ($permissions->success) {
+            $permissions->messages[] = get_string('settings:permissioncheckpassed', 'tool_objectfs');
+        }
+        return $permissions;
+    }
+
 
     /**
      * Whether the plugin is configured and requirements are met.
@@ -167,6 +231,7 @@ class converter implements \core_files\converter_interface {
      */
     public static function are_requirements_met() {
         $converter = new \fileconverter_librelambda\converter();
+
         // First check that we have the basic configuration settings set.
         if (!self::is_config_set($converter)) {
             return false;
@@ -180,9 +245,19 @@ class converter implements \core_files\converter_interface {
             return false;
         }
 
-        // Check input bucket write capability.
-        // Check output bucket read capability.
-        // Check output bucket delete capability.
+        // Check input bucket permissions.
+        $bucket = $converter->config->s3_input_bucket;
+        $permissions = self::have_bucket_permissions($converter, $bucket);
+        if (!$permissions->success) {
+            return false;
+        }
+
+        // Check output bucket permissions.
+        $bucket = $converter->config->s3_ouput_bucket;
+        $permissions = self::have_bucket_permissions($converter, $bucket);
+        if (!$permissions->success) {
+            return false;
+        }
 
         return true;
     }

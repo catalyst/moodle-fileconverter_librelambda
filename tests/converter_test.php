@@ -25,9 +25,13 @@
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
+require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 
-use core_files\conversion;
-use core_files\converter;
+use Aws\Result;
+use Aws\MockHandler;
+use Aws\CommandInterface;
+use Psr\Http\Message\RequestInterface;
+use Aws\S3\Exception\S3Exception;
 
 /**
  * PHPUnit tests for Libre Lambda file converter.
@@ -74,9 +78,19 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         $this->assertTrue($result);
     }
 
-    public function test_is_bucket_accessible() {
+    /**
+     * Test the is bucket accessible method. Should return false.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_is_bucket_accessible_false() {
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd);
+        });
+
         $converter = new \fileconverter_librelambda\converter();
-        $converter->create_client();
+        $converter->create_client($mock);
 
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_bucket_accessible');
@@ -86,6 +100,73 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         $this->assertFalse($result->success);
     }
 
+    /**
+     * Test the is bucket accessible method. Should return false.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_is_bucket_accessible_true() {
+         // Set up the AWS mock.
+         $mock = new MockHandler();
+         $mock->append(new Result(array()));
+
+         $converter = new \fileconverter_librelambda\converter();
+         $converter->create_client($mock);
+
+         // Reflection magic as we are directly testing a private method.
+         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_bucket_accessible');
+         $method->setAccessible(true); // Allow accessing of private method.
+         $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
+
+         $this->assertTrue($result->success);
+    }
+
+    /**
+     * Test bucket permissions method of converter class.
+     */
+    public function test_have_bucket_permissions_false() {
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd);
+        });
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd);
+        });
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd);
+        });
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'have_bucket_permissions');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'bucket1');
+
+        $this->assertFalse($result->success);
+    }
+
+    /**
+     * Test bucket permissions method of converter class.
+     */
+    public function test_have_bucket_permissions_true() {
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array()));
+        $mock->append(new Result(array()));
+        $mock->append(new Result(array()));
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'have_bucket_permissions');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'bucket1');
+
+        $this->assertTrue($result->success);
+    }
 
     /**
      * Test are requirements met method of converter class.
