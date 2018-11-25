@@ -51,7 +51,9 @@ class converter implements \core_files\converter_interface {
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'ppt' => 'application/vnd.ms-powerpoint',
         'pptx' => 'application/vnd.ms-powerpoint',
-        'html' => 'text/html'
+        'html' => 'text/html',
+        'odt' => 'application/vnd.oasis.opendocument.text',
+        'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
     ];
 
     /** @var array $export List of supported export file formats */
@@ -96,7 +98,10 @@ class converter implements \core_files\converter_interface {
             $connectionoptions['handler'] = $handler;
         }
 
-        $this->client = new S3Client($connectionoptions);
+        // Only create client if it hasn't already been done.
+        if ($this->client == null) {
+            $this->client = new S3Client($connectionoptions);
+        }
 
         return $this->client;
     }
@@ -185,7 +190,7 @@ class converter implements \core_files\converter_interface {
                 'Body' => 'test content'));
         } catch (S3Exception $e) {
             $details = $converter->get_exception_details($e);
-            $permissions->messages[] = get_string('settings:writefailure', 'tool_objectfs') . $details;
+            $permissions->messages[] = get_string('settings:writefailure', 'fileconverter_librelambda') . $details;
             $permissions->success = false;
         }
 
@@ -198,7 +203,7 @@ class converter implements \core_files\converter_interface {
             // Write could have failed.
             if ($errorcode !== 'NoSuchKey') {
                 $details = $converter->get_exception_details($e);
-                $permissions->messages[] = get_string('settings:readfailure', 'tool_objectfs') . $details;
+                $permissions->messages[] = get_string('settings:readfailure', 'fileconverter_librelambda') . $details;
                 $permissions->success = false;
             }
         }
@@ -207,18 +212,18 @@ class converter implements \core_files\converter_interface {
             $result = $converter->client->deleteObject(array(
                 'Bucket' => $bucket,
                 'Key' => 'permissions_check_file'));
-            $permissions->messages[] = get_string('settings:deletesuccess', 'tool_objectfs');
+            $permissions->messages[] = get_string('settings:deletesuccess', 'fileconverter_librelambda');
         } catch (S3Exception $e) {
             $errorcode = $e->getAwsErrorCode();
             // Something else went wrong.
             if ($errorcode !== 'AccessDenied') {
                 $details = $converter->get_exception_details($e);
-                $permissions->messages[] = get_string('settings:deleteerror', 'tool_objectfs') . $details;
+                $permissions->messages[] = get_string('settings:deleteerror', 'fileconverter_librelambda') . $details;
             }
         }
 
         if ($permissions->success) {
-            $permissions->messages[] = get_string('settings:permissioncheckpassed', 'tool_objectfs');
+            $permissions->messages[] = get_string('settings:permissioncheckpassed', 'fileconverter_librelambda');
         }
         return $permissions;
     }
@@ -230,13 +235,14 @@ class converter implements \core_files\converter_interface {
      * @return  bool
      */
     public static function are_requirements_met() {
+        return true;
         $converter = new \fileconverter_librelambda\converter();
-
+        error_log('1');
         // First check that we have the basic configuration settings set.
         if (!self::is_config_set($converter)) {
             return false;
         }
-
+        error_log('2');
         $converter->create_client();
 
         // Check that we can access the S3 Buckets.
@@ -244,20 +250,21 @@ class converter implements \core_files\converter_interface {
         if (!$connection->success) {
             return false;
         }
-
+        error_log('3');
         // Check input bucket permissions.
         $bucket = $converter->config->s3_input_bucket;
         $permissions = self::have_bucket_permissions($converter, $bucket);
         if (!$permissions->success) {
             return false;
         }
-
+        error_log('4');
         // Check output bucket permissions.
         $bucket = $converter->config->s3_ouput_bucket;
         $permissions = self::have_bucket_permissions($converter, $bucket);
         if (!$permissions->success) {
             return false;
         }
+        error_log('5');
 
         return true;
     }
@@ -270,6 +277,28 @@ class converter implements \core_files\converter_interface {
      */
     public function start_document_conversion(\core_files\conversion $conversion) {
         global $CFG;
+        $file = $conversion->get_sourcefile();
+        $uploadparams = array(
+            'Bucket' => $this->config->s3_input_bucket, // REQUIRED
+            'Key' => $file->get_pathnamehash(), // REQUIRED
+            'Metadata' => array(
+                'targetformat' => $conversion->get('targetformat'),
+                'id' => $conversion->get('id'),
+                'sourcefileid' => $conversion->get('sourcefileid'),
+            )
+        );
+
+        error_log(print_r($conversion, true));
+        // Upload to S3 input bucket and set status to in progress, or failed if not good upload.
+        $s3client = $this->create_client();
+        try {
+            $result = $s3client->putObject($uploadparams);
+            $conversion->set('status', conversion::STATUS_IN_PROGRESS);
+        } catch (S3Exception $e) {
+            $conversion->set('status', conversion::STATUS_FAILED);
+        }
+
+        error_log(print_r($conversion, true));
 
         return $this;
     }
@@ -281,6 +310,13 @@ class converter implements \core_files\converter_interface {
      * @return  $this;
      */
     public function poll_conversion_status(conversion $conversion) {
+        // debug_print_backtrace (DEBUG_BACKTRACE_IGNORE_ARGS, 7);
+        // error_log(print_r($conversion, true));
+
+        // Check output bucket for file.
+
+        // If file exists set status to complete.
+
         return $this;
     }
 
@@ -295,6 +331,7 @@ class converter implements \core_files\converter_interface {
         // This is not a one-liner because of php 5.6.
         $imports = self::$imports;
         $exports = self::$exports;
+        error_log((int)(isset($imports[$from]) && isset($exports[$to])));
         return isset($imports[$from]) && isset($exports[$to]);
     }
 
@@ -304,6 +341,6 @@ class converter implements \core_files\converter_interface {
      * @return  string
      */
     public function get_supported_conversions() {
-        return implode(', ', ['rtf', 'doc', 'xls', 'docx', 'xlsx', 'ppt', 'pptx', 'pdf', 'html']);
+        return implode(', ', ['doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt', 'ods', 'pdf']);
     }
 }

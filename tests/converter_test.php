@@ -32,6 +32,7 @@ use Aws\MockHandler;
 use Aws\CommandInterface;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
+use \core_files\conversion;
 
 /**
  * PHPUnit tests for Libre Lambda file converter.
@@ -177,6 +178,44 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         $result = $converter::are_requirements_met();
 
         $this->assertFalse($result);
+    }
+
+    /**
+     * Test start document conversion class.
+     */
+    public function test_start_document_conversion() {
+        global $CFG;
+        $this->resetAfterTest();
+
+        // Create file to analyze.
+        $fs = get_file_storage();
+        $filerecord = array(
+            'contextid' => 252,
+            'component' => 'assignsubmission_file',
+            'filearea' => 'submission_files',
+            'itemid' => 8,
+            'filepath' => '/',
+            'filename' => 'testsubmission.odt');
+        $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
+        $file = $fs->create_file_from_pathname($filerecord, $fileurl);
+
+        $conversion = new conversion(0, (object) [
+            'sourcefileid' => $file->get_id(),
+            'targetformat' => 'pdf',
+        ]);
+        $conversion->create();
+
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array('ObjectURL' => 's3://herpderp',)));
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+
+        $convert = $converter->start_document_conversion($conversion);
+
+
+       // $this->assertFalse($result);
     }
 
 }
