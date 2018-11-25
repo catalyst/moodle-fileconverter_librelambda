@@ -235,14 +235,13 @@ class converter implements \core_files\converter_interface {
      * @return  bool
      */
     public static function are_requirements_met() {
-        return true;
         $converter = new \fileconverter_librelambda\converter();
-        error_log('1');
+
         // First check that we have the basic configuration settings set.
         if (!self::is_config_set($converter)) {
             return false;
         }
-        error_log('2');
+
         $converter->create_client();
 
         // Check that we can access the S3 Buckets.
@@ -250,21 +249,20 @@ class converter implements \core_files\converter_interface {
         if (!$connection->success) {
             return false;
         }
-        error_log('3');
+
         // Check input bucket permissions.
         $bucket = $converter->config->s3_input_bucket;
         $permissions = self::have_bucket_permissions($converter, $bucket);
         if (!$permissions->success) {
             return false;
         }
-        error_log('4');
+
         // Check output bucket permissions.
         $bucket = $converter->config->s3_ouput_bucket;
         $permissions = self::have_bucket_permissions($converter, $bucket);
         if (!$permissions->success) {
             return false;
         }
-        error_log('5');
 
         return true;
     }
@@ -288,7 +286,6 @@ class converter implements \core_files\converter_interface {
             )
         );
 
-        error_log(print_r($conversion, true));
         // Upload to S3 input bucket and set status to in progress, or failed if not good upload.
         $s3client = $this->create_client();
         try {
@@ -297,8 +294,6 @@ class converter implements \core_files\converter_interface {
         } catch (S3Exception $e) {
             $conversion->set('status', conversion::STATUS_FAILED);
         }
-
-        error_log(print_r($conversion, true));
 
         return $this;
     }
@@ -312,10 +307,31 @@ class converter implements \core_files\converter_interface {
     public function poll_conversion_status(conversion $conversion) {
         // debug_print_backtrace (DEBUG_BACKTRACE_IGNORE_ARGS, 7);
         // error_log(print_r($conversion, true));
+        $file = $conversion->get_sourcefile();
+        $tmpdir = make_request_directory();
+        $saveas = $tmpdir . '/' . $file->get_pathnamehash();
+
+        $downloadparams = array(
+            'Bucket' => $this->config->s3_output_bucket, // REQUIRED
+            'Key' => $file->get_pathnamehash(), // REQUIRED
+            'SaveAs' => $saveas
+        );
 
         // Check output bucket for file.
-
-        // If file exists set status to complete.
+        $s3client = $this->create_client();
+        try {
+            $result = $s3client->getObject($downloadparams);
+            $conversion->store_destfile_from_path($saveas);
+            $conversion->set('status', conversion::STATUS_COMPLETE);
+            $conversion->update();
+        } catch (S3Exception $e) {
+            $errorcode = $e->getAwsErrorCode();
+            if ($errorcode == 'NoSuchKey') {
+                $conversion->set('status', conversion::STATUS_IN_PROGRESS);
+            } else {
+                $conversion->set('status', conversion::STATUS_FAILED);
+            }
+        }
 
         return $this;
     }
