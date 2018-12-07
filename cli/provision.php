@@ -29,7 +29,6 @@ define('CACHE_DISABLE_ALL', true);
 
 require(__DIR__.'/../../../../config.php');
 require_once($CFG->libdir.'/clilib.php');         // cli only functions
-require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');  // AWS SDK
 
 // now get cli options
 list($options, $unrecognized) = cli_get_params(
@@ -38,7 +37,7 @@ list($options, $unrecognized) = cli_get_params(
         'secret'            => false,
         'help'              => false,
         'region'            => false,
-        'bucket-prefix'     => false,
+        'bucket-prefix'     => '',
         'set-config'        => false,
     ),
     array(
@@ -61,7 +60,7 @@ Options:
 --keyid=STRING            AWS API Access Key ID.
                           The API user for this key, will need permissions to:
                           Create S3 buckets, IAM roles, Lambda functions.
---secret=STRING           AWS API Secret Access Key
+--secret=STRING           AWS API Secret Access Key.
 --region=STRING           The AWS region to create the environment in.
                           e.g. ap-southeast-2
 --bucket-prefix=STRING    The prefix to use for the created AWS S3 buckets.
@@ -83,5 +82,16 @@ Example:
     echo $help;
     die;
 }
+
+$provisioner = new \fileconverter_librelambda\provision($options['keyid'], $options['secret'], !$options['region'], $options['bucket-prefix']);
+
+// Create S3 buckets.
+
+// Create IAM role.
+
+// Create Lambda function.
+
+//  Test things
+
 
 exit(0); // 0 means success
