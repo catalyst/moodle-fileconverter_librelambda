@@ -30,6 +30,7 @@ require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
 use Aws\Iam;
+use Aws\Iam\IamClient;
 
 /**
  * Class for provisioning AWS resources.
@@ -74,6 +75,12 @@ class provision {
      */
     private $s3client;
 
+    /**
+     *
+     * @var \Aws\Iam\IamClient IAM client.
+     */
+    private $iamclient;
+
 
     /**
      * The constructor for the class
@@ -98,18 +105,35 @@ class provision {
 
     }
 
-    private function check_bucket_exists($bucketname, $client) {
+    /**
+     * Check if the bucket already exists in AWS.
+     *
+     * @param string $bucketname The name of the bucket to check.
+     * @return boolean $bucketexists The result of the check.
+     */
+    private function check_bucket_exists($bucketname) {
+        $bucketexists = true;
 
+        try {
+            $this->s3client->headBucket(array('Bucket' => $bucketname));
+        } catch (S3Exception $e) {
+            // Check the error code. If code = 403, this means the bucket
+            // exists but we can't access it.  Need to know either way.
+            $errorcode = $e->getAwsErrorCode();
+            if ($errorcode != 403) {
+                $bucketexists = false;
+            }
+
+        }
+        return $bucketexists;
     }
 
+
     /**
-     * Creates a S3 bucket in AWS.
      *
-     * @param string $suffix The bucket suffix to use.
-     *
+     * @return \Aws\S3\S3Client
      */
-    public function create_bucket($suffix, $handler=null) {
-        // Setup the S3 client.
+    public function create_s3_client($handler=null){
         $connectionoptions = array(
                 'version' => 'latest',
                 'region' => $this->region,
@@ -127,6 +151,94 @@ class provision {
         if ($this->s3client == null) {
             $this->s3client = new S3Client($connectionoptions);
         }
+
+        return $this->s3client;
+    }
+
+    public function create_iam_client($handler=null){
+        $connectionoptions = array(
+                'version' => 'latest',
+                'region' => $this->region,
+                'credentials' => [
+                        'key' => $this->keyid,
+                        'secret' => $this->secret
+                ]);
+
+        // Allow handler overriding for testing.
+        if ($handler!=null) {
+            $connectionoptions['handler'] = $handler;
+        }
+
+        // Only create client if it hasn't already been done.
+        if ($this->iamclient== null) {
+            $this->iamclient= new IamClient($connectionoptions);
+        }
+
+        return $this->iamclient;
+    }
+
+    /**
+     *
+     * @param string $bucketname
+     * @return \stdClass
+     */
+    private function create_s3_bucket($bucketname) {
+        $result = new \stdClass();
+        $result->status = true;
+        $result->code = 0;
+        $result->message = '';
+        try {
+            $s3result = $this->s3client->createBucket(array(
+                    'ACL' => 'private',
+                    'Bucket' => $bucketname, // REQUIRED
+                    'CreateBucketConfiguration' => array(
+                            'LocationConstraint' => $this->region,
+                    ),
+            ));
+            $result->message = $s3result['Location'];
+        } catch (S3Exception $e) {
+            $result->status = false;
+            $result->code = $e->getAwsErrorCode();
+            $result->message = $e->getAwsErrorMessage();
+            $errorcode = $e->getAwsErrorCode();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Creates a S3 bucket in AWS.
+     *
+     * @param string $suffix The bucket suffix to use.
+     *
+     */
+    public function create_bucket($suffix) {
+        $result = new \stdClass();
+        $result->status = true;
+        $result->code = 0;
+        $result->message = '';
+
+        $bucketname = $this->bucketprefix . $suffix;
+
+        // Setup the S3 client.
+        $this->create_s3_client();
+
+        // Check bucket exists.
+        // If not create it.
+        $bucketexists = $this->check_bucket_exists($bucketname);
+        if(!$bucketexists) {
+            $result = $this->create_s3_bucket($bucketname);
+        } else {
+            $result->status = false;
+            $result->code = 1;
+            $result->message= get_string('provision:bucketexists', 'fileconverter_librelambda');
+        }
+
+        return $result;
+
+    }
+
+    public function create_and_attach_iam() {
 
     }
 }

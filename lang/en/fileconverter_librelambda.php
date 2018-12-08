@@ -48,3 +48,7 @@ $string['settings:readfailure'] = 'Could not read object from the external objec
 $string['settings:deletesuccess'] = 'Could delete object from the external object storage - It is not recommended for the user to have delete permissions. ';
 $string['settings:deleteerror'] = 'Could not delete object from the external object storage. ';
 $string['settings:permissioncheckpassed'] = 'Permissions check passed.';
+$string['provision:bucketexists'] = 'Bucket exists';
+$string['provision:creatings3'] = 'Creating S3 Buckets';
+$string['provision:creatingiam'] = 'Creating IAM Roles';
+$string['provision:bucketcreated'] = 'Created {$a->bucket} bucket, at location {$a->location}';

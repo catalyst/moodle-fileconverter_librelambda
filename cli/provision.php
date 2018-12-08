@@ -86,8 +86,32 @@ Example:
 $provisioner = new \fileconverter_librelambda\provision($options['keyid'], $options['secret'], !$options['region'], $options['bucket-prefix']);
 
 // Create S3 buckets.
+cli_heading(get_string('provision:creatings3', 'fileconverter_librelambda'));
+
+$inputbucketresposnse = $provisioner->create_bucket('input');
+if ($inputbucketresposnse->code != 0 ) {
+    $errormsg = $inputbucketresposnse->code . ': ' . $inputbucketresposnse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
+            'bucket' =>'input',
+            'location' => $outputbucketresposnse->message)) . PHP_EOL;
+}
+
+$outputbucketresposnse = $provisioner->create_bucket('output');
+if ($outputbucketresposnse->code != 0 ) {
+    $errormsg = $outputbucketresposnse->code . ': ' . $outputbucketresposnse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
+            'bucket' =>'output',
+            'location' => $outputbucketresposnse->message)) . PHP_EOL;
+}
 
 // Create IAM role.
+cli_heading(get_string('provision:creatingiam', 'fileconverter_librelambda'));
 
 // Create Lambda function.
 
