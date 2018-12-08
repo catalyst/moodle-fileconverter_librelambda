@@ -29,8 +29,8 @@ require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
-use Aws\Iam;
 use Aws\Iam\IamClient;
+use Aws\Iam\Exception\IamException;
 
 /**
  * Class for provisioning AWS resources.
@@ -200,7 +200,6 @@ class provision {
             $result->status = false;
             $result->code = $e->getAwsErrorCode();
             $result->message = $e->getAwsErrorMessage();
-            $errorcode = $e->getAwsErrorCode();
         }
 
         return $result;
@@ -238,7 +237,53 @@ class provision {
 
     }
 
+    private function create_iam_role() {
+        $result = new \stdClass();
+        $result->status = true;
+        $result->code = 0;
+        $result->message = '';
+
+        try {
+            $document = '{"Version":"2012-10-17","Statement":[{"Sid": "","Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}';
+            $iamresult = $this->iamclient->createRole(array(
+                    'AssumeRolePolicyDocument' => $document, // REQUIRED
+                    'Description' => 'Lambda PDF Role',
+                    'RoleName' => 'lambda-pdf', // REQUIRED
+            ));
+            $result->message = $iamresult['Role']['ARN'];
+        } catch (IamException $e) {
+            $result->status = false;
+            $result->code = $e->getAwsErrorCode();
+            $result->message = $e->getAwsErrorMessage();
+        }
+
+        return $result;
+    }
+
+    private function attach_policy() {
+        $result = new \stdClass();
+        $result->status = true;
+        $result->code = 0;
+        $result->message = '';
+
+        try {
+            $iamresult = $this->iamclient->attachRolePolicy(array(
+                    'PolicyArn' => 'arn:aws:iam::aws:policy/AWSLambdaExecute', // REQUIRED
+                    'RoleName' => 'lambda-pdf', // REQUIRED
+            ));
+        } catch (IamException $e) {
+            $result->status = false;
+            $result->code = $e->getAwsErrorCode();
+            $result->message = $e->getAwsErrorMessage();
+        }
+
+        return $result;
+    }
+
     public function create_and_attach_iam() {
+
+        // Setup the Iam client.
+        $this->create_iam_client();
 
     }
 }

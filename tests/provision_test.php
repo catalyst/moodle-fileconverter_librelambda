@@ -32,7 +32,7 @@ use Aws\MockHandler;
 use Aws\CommandInterface;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
-use \core_files\conversion;
+use Aws\Iam\Exception\IamException;
 
 /**
  * PHPUnit tests for Libre Lambda AWS provision.
@@ -196,5 +196,122 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
             $this->assertEquals('http://foobar.bah.joo.bar.s3.amazonaws.com/', $result->message);
     }
 
+    /**
+     * Test creating IAM Role. Should return false.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_create_iam_role_false() {
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new IamException('Mock exception', $cmd,  array(
+                    'code' => 'EntityAlreadyExistsException',
+                    'message' => 'The request was rejected because it attempted to create a resource that already exists.'
+            ));
+        });
+
+        $keyid = 'AKIAI2UFNQ67IZURMV7Q';
+        $secret = '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';
+        $region = 'ap-southeast-2';
+        $bucketprefix = '';
+
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $provisioner->create_iam_client($mock);
+
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_iam_role');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke($provisioner);
+
+        $this->assertFalse($result->status);
+        $this->assertEquals('EntityAlreadyExistsException', $result->code);
+        $this->assertEquals('The request was rejected because it attempted to create a resource that already exists.', $result->message);
+    }
+
+    /**
+     * Test creating IAM Role. Should return false.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_create_iam_role_true() {
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array('Role' => array('ARN' => 'arn:aws:iam::693620471840:role/lambda-pdf'))));
+
+        $keyid = 'AHIAI2UFNQ67IZ7RMV4Q';
+        $secret = '9QT5TnfB5LjkMu9qm8U63v/WaFu9qYwUqOZyXvBy';
+        $region = 'ap-southeast-2';
+        $bucketprefix = '';
+
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $provisioner->create_iam_client($mock);
+
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_iam_role');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke($provisioner);
+
+        $this->assertTrue($result->status);
+        $this->assertEquals(0, $result->code);
+        $this->assertEquals('arn:aws:iam::693620471840:role/lambda-pdf', $result->message);
+    }
+
+    /**
+     * Test creating IAM Role. Should return false.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_attach_policy_false() {
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new IamException('Mock exception', $cmd,  array(
+                    'code' => 'NoSuchEntityException',
+                    'message' => 'The request was rejected because it referenced a resource entity that does not exist. The error message describes the resource.'
+            ));
+        });
+
+        $keyid = 'AHIAI2UFNQ67IZ7RMV4Q';
+        $secret = '9QT5TnfB5LjkMu9qm8U63v/WaFu9qYwUqOZyXvBy';
+        $region = 'ap-southeast-2';
+        $bucketprefix = '';
+
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $provisioner->create_iam_client($mock);
+
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'attach_policy');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke($provisioner);
+
+        $this->assertFalse($result->status);
+        $this->assertEquals('NoSuchEntityException', $result->code);
+        $this->assertEquals('The request was rejected because it referenced a resource entity that does not exist. The error message describes the resource.', $result->message);
+    }
+
+    /**
+     * Test creating IAM Role. Should return false.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_attach_policy_true() {
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array()));
+
+        $keyid = 'AHIAI2UFNQ67IZ7RMV4Q';
+        $secret = '9QT5TnfB5LjkMu9qm8U63v/WaFu9qYwUqOZyXvBy';
+        $region = 'ap-southeast-2';
+        $bucketprefix = '';
+
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $provisioner->create_iam_client($mock);
+
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'attach_policy');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke($provisioner);
+
+        $this->assertTrue($result->status);
+        $this->assertEquals(0, $result->code);
+        $this->assertEquals('', $result->message);
+    }
 
 }
