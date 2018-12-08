@@ -155,6 +155,11 @@ class provision {
         return $this->s3client;
     }
 
+    /**
+     *
+     * @param unknown $handler
+     * @return \Aws\Iam\IamClient
+     */
     public function create_iam_client($handler=null){
         $connectionoptions = array(
                 'version' => 'latest',
@@ -237,6 +242,10 @@ class provision {
 
     }
 
+    /**
+     *
+     * @return \stdClass
+     */
     private function create_iam_role() {
         $result = new \stdClass();
         $result->status = true;
@@ -260,6 +269,10 @@ class provision {
         return $result;
     }
 
+    /**
+     *
+     * @return \stdClass
+     */
     private function attach_policy() {
         $result = new \stdClass();
         $result->status = true;
@@ -280,10 +293,30 @@ class provision {
         return $result;
     }
 
+    /**
+     *
+     */
     public function create_and_attach_iam() {
+        $policyresult= new \stdClass();
 
         // Setup the Iam client.
         $this->create_iam_client();
+
+        // Create IAM role.
+        $roleresult = $this->create_iam_role();
+
+        if ($roleresult->status) {
+            // Attach policy.
+            $policyresult = $this->attach_policy();
+        }
+
+        if (isset($policyresult->status) && !$policyresult->status) {
+            $result = $policyresult;
+        } else {
+            $result = $roleresult;
+        }
+
+        return $result;
 
     }
 }

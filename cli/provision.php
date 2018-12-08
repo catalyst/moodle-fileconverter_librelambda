@@ -113,7 +113,18 @@ if ($outputbucketresposnse->code != 0 ) {
 // Create IAM role.
 cli_heading(get_string('provision:creatingiam', 'fileconverter_librelambda'));
 
+$iamresposnse = $provisioner->create_and_attach_iam();
+if ($iamresposnse->code != 0 ) {
+    $errormsg = $iamresposnse->code . ': ' . $iamresposnse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string('provision:iamcreated', 'fileconverter_librelambda', array(
+            'arn' =>$iamresposnse->message)) . PHP_EOL;
+}
+
 // Create Lambda function.
+
 
 //  Test things
 
