@@ -25,9 +25,13 @@ def lambda_handler(event, context):
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
         key = record['s3']['object']['key']
-        targetformat = record['s3']['object']['Metadata']['targetformat']
-        conversionid = record['s3']['object']['Metadata']['id']
-        sourcefileid = record['s3']['object']['Metadata']['sourcefileid']
+        response = s3_client.head_object(Bucket=bucket, Key=key)
+
+        logger.info('Response: {}'.format(response))
+
+        targetformat = response['Metadata']['targetformat']
+        conversionid = response['Metadata']['id']
+        sourcefileid = response['Metadata']['sourcefileid']
 
         download_path = '/tmp/{}{}'.format(uuid.uuid4(), key)
         # upload_path = '/tmp/resized-{}'.format(key)
