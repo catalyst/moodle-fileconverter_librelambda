@@ -277,8 +277,9 @@ class converter implements \core_files\converter_interface {
         global $CFG;
         $file = $conversion->get_sourcefile();
         $uploadparams = array(
-            'Bucket' => $this->config->s3_input_bucket, // REQUIRED
-            'Key' => $file->get_pathnamehash(), // REQUIRED
+            'Bucket' => $this->config->s3_input_bucket, // REQUIRED.
+            'Key' => $file->get_pathnamehash(), // REQUIRED.
+            'Body' => $file, // REQUIRED.
             'Metadata' => array(
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),

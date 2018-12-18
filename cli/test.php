@@ -36,7 +36,9 @@ list($options, $unrecognized) = cli_get_params(
         'secret'            => false,
         'help'              => false,
         'region'            => false,
-        'bucket-prefix'     => '',
+        'inputbucket'       => '',
+        'outputbucket'      => '',
+        'file'              => ''
     ),
     array(
         'h' => 'help'
@@ -48,7 +50,8 @@ if ($unrecognized) {
     cli_error(get_string('cliunknowoption', 'admin', $unrecognized));
 }
 
-if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']) {
+if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']
+    || !$options['inputbucket'] || !$options['outputbucket']) {
     $help =
 "Command line Librelmbda provision.
 This command line script will provision the Librelambda environment in AWS.
@@ -61,10 +64,11 @@ Options:
 --secret=STRING           AWS API Secret Access Key.
 --region=STRING           The AWS region to create the environment in.
                           e.g. ap-southeast-2
---bucket-prefix=STRING    The prefix to use for the created AWS S3 buckets.
-                          Bucket names need to be globally unique.
-                          If this isn't provided the Moodle site identifier
-                          will be used instead.
+--input-bucket=STRING     The input AWS S3 bucket to use.
+                          Must exist.
+--output-bucket=STRING    The output AWS S3 bucket to use.
+                          Must exist.
+--file=STRING             The file (with path) to convert.
 
 -h, --help                Print out this help
 
@@ -72,27 +76,28 @@ Example:
 \$sudo -u www-data files/converter/librelambda/cli/provision.php \
 --keyid=QKIAIVYPO6FXJESSW4HQ \
 --secret=CzI0r0FvPf/TqPwCoiPOdhztEkvkyULbWike1WqA \
---region=ap-southeast-2
+--region=ap-southeast-2 \
+--input-bucket=librelambda_input \
+--output-bucket=librelambda_output \
+--file='\tmp\test.odt'
 ";
 
     echo $help;
     die;
 }
 
-$converter = new \fileconverter_librelambda\converter();
+$tester = new \fileconverter_librelambda\tester($options['keyid'], $options['secret'], !$options['region'], $options['inputbucket'], $options['outputbucket']);
 
 // Upload file to input S3 bucket.
-cli_heading(get_string('provision:creatings3', 'fileconverter_librelambda'));
+cli_heading(get_string('test:uploadfile', 'fileconverter_librelambda'));
 
-$inputbucketresposnse = $provisioner->create_bucket('input');
-if ($inputbucketresposnse->code != 0 ) {
-    $errormsg = $inputbucketresposnse->code . ': ' . $inputbucketresposnse->message;
+$uploadresposnse = $tester->upload_file($options['file']);
+if ($uploadresposnse->code != 0 ) {
+    $errormsg = $uploadresposnse->code . ': ' . $uploadresposnse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
-            'bucket' =>'input',
-            'location' => $outputbucketresposnse->message)) . PHP_EOL;
+    echo get_string('test:fileuploaded', 'fileconverter_librelambda') . PHP_EOL;
 }
 
 exit(0); // 0 means success
