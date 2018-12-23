@@ -29,7 +29,6 @@ require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
-use Aws\Iam\IamClient;
 use Aws\Iam\Exception\IamException;
 
 /**
@@ -152,25 +151,31 @@ class tester {
         return $this->s3client;
     }
 
-    /**
-     *
-     * @param string $bucketname
-     * @return \stdClass
-     */
-    private function create_s3_bucket($bucketname) {
+
+    private function bucket_put_object($filepath){
         $result = new \stdClass();
         $result->status = true;
         $result->code = 0;
         $result->message = '';
+
+        $client = $this->s3client;
+        $fileinfo = pathinfo($filepath);
+
+        $uploadparams = array(
+            'Bucket' => $this->config->inputbucket, // REQUIRED.
+            'Key' => $fileinfo['basename'], // REQUIRED.
+            'Body' => $filepath, // REQUIRED.
+            'Metadata' => array(
+                'targetformat' => 'pdf',
+                'id' => 'abc123',
+                'sourcefileid' => '123456',
+            )
+        );
+
         try {
-            $s3result = $this->s3client->createBucket(array(
-                    'ACL' => 'private',
-                    'Bucket' => $bucketname, // REQUIRED
-                    'CreateBucketConfiguration' => array(
-                            'LocationConstraint' => $this->region,
-                    ),
-            ));
-            $result->message = $s3result['Location'];
+            $putobject = $s3client->putObject($uploadparams);
+            $result->message = $putobject['ObjectURL'];
+
         } catch (S3Exception $e) {
             $result->status = false;
             $result->code = $e->getAwsErrorCode();
@@ -192,98 +197,20 @@ class tester {
         $result->code = 0;
         $result->message = '';
 
-        $bucketname = $this->bucketprefix . $suffix;
+        $bucketname = $this->inputbucket;
 
         // Setup the S3 client.
         $this->create_s3_client();
 
-        // Check bucket exists.
-        // If not create it.
+        // Check input bucket exists.
         $bucketexists = $this->check_bucket_exists($bucketname);
-        if(!$bucketexists) {
-            $result = $this->create_s3_bucket($bucketname);
+        if($bucketexists) {
+            // If we have bucket, upload file
+            $result = $this->bucket_put_object($filepath);
         } else {
             $result->status = false;
             $result->code = 1;
-            $result->message= get_string('provision:bucketexists', 'fileconverter_librelambda');
-        }
-
-        return $result;
-
-    }
-
-    /**
-     *
-     * @return \stdClass
-     */
-    private function create_iam_role() {
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
-
-        try {
-            $document = '{"Version":"2012-10-17","Statement":[{"Sid": "","Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}';
-            $iamresult = $this->iamclient->createRole(array(
-                    'AssumeRolePolicyDocument' => $document, // REQUIRED
-                    'Description' => 'Lambda PDF Role',
-                    'RoleName' => 'lambda-pdf', // REQUIRED
-            ));
-            $result->message = $iamresult['Role']['ARN'];
-        } catch (IamException $e) {
-            $result->status = false;
-            $result->code = $e->getAwsErrorCode();
-            $result->message = $e->getAwsErrorMessage();
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     * @return \stdClass
-     */
-    private function attach_policy() {
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
-
-        try {
-            $iamresult = $this->iamclient->attachRolePolicy(array(
-                    'PolicyArn' => 'arn:aws:iam::aws:policy/AWSLambdaExecute', // REQUIRED
-                    'RoleName' => 'lambda-pdf', // REQUIRED
-            ));
-        } catch (IamException $e) {
-            $result->status = false;
-            $result->code = $e->getAwsErrorCode();
-            $result->message = $e->getAwsErrorMessage();
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    public function create_and_attach_iam() {
-        $policyresult= new \stdClass();
-
-        // Setup the Iam client.
-        $this->create_iam_client();
-
-        // Create IAM role.
-        $roleresult = $this->create_iam_role();
-
-        if ($roleresult->status) {
-            // Attach policy.
-            $policyresult = $this->attach_policy();
-        }
-
-        if (isset($policyresult->status) && !$policyresult->status) {
-            $result = $policyresult;
-        } else {
-            $result = $roleresult;
+            $result->message= get_string('tester:bucketnotexists', 'fileconverter_librelambda');
         }
 
         return $result;
