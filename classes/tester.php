@@ -162,7 +162,7 @@ class tester {
         $fileinfo = pathinfo($filepath);
 
         $uploadparams = array(
-            'Bucket' => $this->config->inputbucket, // REQUIRED.
+            'Bucket' => $this->inputbucket, // REQUIRED.
             'Key' => $fileinfo['basename'], // REQUIRED.
             'Body' => $filepath, // REQUIRED.
             'Metadata' => array(
@@ -173,7 +173,7 @@ class tester {
         );
 
         try {
-            $putobject = $s3client->putObject($uploadparams);
+            $putobject = $client->putObject($uploadparams);
             $result->message = $putobject['ObjectURL'];
 
         } catch (S3Exception $e) {
@@ -210,7 +210,7 @@ class tester {
         } else {
             $result->status = false;
             $result->code = 1;
-            $result->message= get_string('tester:bucketnotexists', 'fileconverter_librelambda');
+            $result->message= get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
         }
 
         return $result;

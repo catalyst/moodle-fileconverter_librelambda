@@ -6,6 +6,7 @@ import tempfile
 import os
 import mimetypes
 import logging
+import uuid
 
 s3_client = boto3.client('s3')
 
@@ -40,4 +41,4 @@ def lambda_handler(event, context):
         s3_client.download_file(bucket, key, download_path)
 
         # TODO: pass the output bucket name in at runtime.
-        s3_client.upload_file(upload_path, 'librelamdamoodle-output', key)
+        s3_client.upload_file(upload_path, os.environ['OutputBucket'], key)

@@ -53,3 +53,6 @@ $string['provision:creatings3'] = 'Creating S3 Buckets';
 $string['provision:creatingiam'] = 'Creating IAM Roles';
 $string['provision:bucketcreated'] = 'Created {$a->bucket} bucket, at location {$a->location}';
 $string['provision:iamcreated'] = 'IAM Role and Policy created, ARN is: {$a->arn}';
+$string['test:bucketnotexists'] = 'The {$a} bucket does not exist.';
+$string['test:fileuploaded'] = 'Test file uploaded';
+$string['test:uploadfile'] = 'Uploading test file';

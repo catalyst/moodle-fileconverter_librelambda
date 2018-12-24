@@ -36,8 +36,8 @@ list($options, $unrecognized) = cli_get_params(
         'secret'            => false,
         'help'              => false,
         'region'            => false,
-        'inputbucket'       => '',
-        'outputbucket'      => '',
+        'input-bucket'       => '',
+        'output-bucket'      => '',
         'file'              => ''
     ),
     array(
@@ -51,7 +51,7 @@ if ($unrecognized) {
 }
 
 if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']
-    || !$options['inputbucket'] || !$options['outputbucket']) {
+    || !$options['input-bucket'] || !$options['output-bucket']) {
     $help =
 "Command line Librelmbda provision.
 This command line script will provision the Librelambda environment in AWS.
@@ -73,20 +73,20 @@ Options:
 -h, --help                Print out this help
 
 Example:
-\$sudo -u www-data files/converter/librelambda/cli/provision.php \
+\$sudo -u www-data php files/converter/librelambda/cli/test.php \
 --keyid=QKIAIVYPO6FXJESSW4HQ \
 --secret=CzI0r0FvPf/TqPwCoiPOdhztEkvkyULbWike1WqA \
 --region=ap-southeast-2 \
 --input-bucket=librelambda_input \
 --output-bucket=librelambda_output \
---file='\tmp\test.odt'
+--file='\\tmp\\test.odt'
 ";
 
     echo $help;
     die;
 }
 
-$tester = new \fileconverter_librelambda\tester($options['keyid'], $options['secret'], !$options['region'], $options['inputbucket'], $options['outputbucket']);
+$tester = new \fileconverter_librelambda\tester($options['keyid'], $options['secret'], $options['region'], $options['input-bucket'], $options['output-bucket']);
 
 // Upload file to input S3 bucket.
 cli_heading(get_string('test:uploadfile', 'fileconverter_librelambda'));
