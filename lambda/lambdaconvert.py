@@ -7,11 +7,44 @@ import os
 import mimetypes
 import logging
 import uuid
+import tarfile
+import urllib
+import subprocess
 
 s3_client = boto3.client('s3')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+
+def get_libreoffice(downloadurl):
+    """
+    This method downloads and extracts the Libre Office tar archive and extracts
+    it locally for the lambda function to use.
+    As this only needs to happen on Lmabda 'cold starts' it first checks if Libre Office
+    is already available.
+    """
+
+    # Only get Libre Office if this is a cold start and we don't arleady have it.
+    if not os.path.exists('/tmp/instdir'):
+        file_tmp = urllib.urlretrieve(downloadurl, filename=None)[0]  # Download file to Python temp.
+        tar = tarfile.open(file_tmp)S
+        tar.extractall('/tmp')  # Extract to the temp directory of Lambda.
+        
+def convert_file(filepath):
+    """
+    Convert the input file to PDF.
+    Return the path of the converted document/
+    """
+    
+    #./instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard --nolockcheck --nologo --norestore --convert-to pdf --outdir /tmp /var/www/moodle/files/converter/librelambda/tests/fixtures/testsubmission.odt
+    
+    subprocess.run(["ls", "-l", "/dev/null"], capture_output=True)
+
+dev save_output(filepath):
+    """
+    Save the converted file to the output S3 bucket.
+    """
 
 
 def lambda_handler(event, context):
@@ -23,6 +56,12 @@ def lambda_handler(event, context):
     Get the input document from the input S3 bucket. Convert the input file into the desired format.
     Upload the converted document to the output S3 bucket.
     """
+
+    #  Get and unpack the Libre Office package.
+    libreurl = os.environ['LibreLocation']
+    get_libreoffice(libreurl)
+
+    #  Now get and process the file from the input bucket.
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
         key = record['s3']['object']['key']
