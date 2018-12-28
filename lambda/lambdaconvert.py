@@ -8,7 +8,7 @@ import mimetypes
 import logging
 import uuid
 import tarfile
-import urllib
+import urllib.request
 import subprocess
 
 s3_client = boto3.client('s3')
@@ -27,10 +27,10 @@ def get_libreoffice(downloadurl):
 
     # Only get Libre Office if this is a cold start and we don't arleady have it.
     if not os.path.exists('/tmp/instdir'):
-        file_tmp = urllib.urlretrieve(downloadurl, filename=None)[0]  # Download file to Python temp.
-        tar = tarfile.open(file_tmp)S
-        tar.extractall('/tmp')  # Extract to the temp directory of Lambda.
-        
+        with urllib.request.urlopen(downloadurl) as response:
+            with tarfile.open(fileobj=response, mode="r|xz") as archive:
+                archive.extractall('/tmp') # Extract to the temp directory of Lambda.
+
 def convert_file(filepath):
     """
     Convert the input file to PDF.
