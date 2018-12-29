@@ -26,10 +26,13 @@ def get_libreoffice(downloadurl):
     """
 
     # Only get Libre Office if this is a cold start and we don't arleady have it.
-    if not os.path.exists('/tmp/instdir'):
+    if not os.path.exists('/tmp/instdir/program/soffice'):
+        logger.info('Downloading and extracting Libre Office')
         with urllib.request.urlopen(downloadurl) as response:
             with tarfile.open(fileobj=response, mode="r|xz") as archive:
                 archive.extractall('/tmp')  # Extract to the temp directory of Lambda.
+    else:
+        logger.info('Libre Office executable exists already.')
 
 
 def convert_file(filepath):
@@ -46,13 +49,14 @@ def convert_file(filepath):
         "--nolockcheck",
         "--nologo",
         "--norestore",
-        "--convert-to pdf",
+        "--convert-to",
+        "pdf",
         "--outdir",
         "/tmp",
         filepath  # Needs to be the absolute path as a string
         ]
 
-    result = subprocess.run(commandargs, capture_output=True, stdout=subprocess.PIPE)
+    result = subprocess.run(commandargs, stdout=subprocess.PIPE)
     result.check_returncode()  # Throw an error on non zero return code.
     #  TODO: add some logging an error handling.
 
@@ -83,8 +87,6 @@ def lambda_handler(event, context):
         key = record['s3']['object']['key']
         response = s3_client.head_object(Bucket=bucket, Key=key)
 
-        logger.info('Response: {}'.format(response))
-
         targetformat = response['Metadata']['targetformat']
         conversionid = response['Metadata']['id']
         sourcefileid = response['Metadata']['sourcefileid']
@@ -101,3 +103,6 @@ def lambda_handler(event, context):
         # Upload the converted file to the output S3 as the original name.
         # TODO: add some metadata to the object.
         s3_client.upload_file(upload_path, os.environ['OutputBucket'], key)
+
+        # Remove file from input bucket
+        # Remove file from temp

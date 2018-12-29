@@ -163,7 +163,7 @@ class tester {
 
         $uploadparams = array(
             'Bucket' => $this->inputbucket, // REQUIRED.
-            'Key' => $fileinfo['basename'], // REQUIRED.
+            'Key' => $fileinfo['filename'], // REQUIRED.
             'Body' => $filepath, // REQUIRED.
             'Metadata' => array(
                 'targetformat' => 'pdf',
