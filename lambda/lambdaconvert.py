@@ -29,19 +29,35 @@ def get_libreoffice(downloadurl):
     if not os.path.exists('/tmp/instdir'):
         with urllib.request.urlopen(downloadurl) as response:
             with tarfile.open(fileobj=response, mode="r|xz") as archive:
-                archive.extractall('/tmp') # Extract to the temp directory of Lambda.
+                archive.extractall('/tmp')  # Extract to the temp directory of Lambda.
+
 
 def convert_file(filepath):
     """
     Convert the input file to PDF.
     Return the path of the converted document/
     """
-    
-    #./instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard --nolockcheck --nologo --norestore --convert-to pdf --outdir /tmp /var/www/moodle/files/converter/librelambda/tests/fixtures/testsubmission.odt
-    
-    subprocess.run(["ls", "-l", "/dev/null"], capture_output=True)
+    commandargs = [
+        "/tmp/instdir/program/soffice",  # Libre conversion executable.
+        "--headless",
+        "--invisible",
+        "--nodefault",
+        "--nofirststartwizard",
+        "--nolockcheck",
+        "--nologo",
+        "--norestore",
+        "--convert-to pdf",
+        "--outdir",
+        "/tmp",
+        filepath  # Needs to be the absolute path as a string
+        ]
 
-dev save_output(filepath):
+    result = subprocess.run(commandargs, capture_output=True, stdout=subprocess.PIPE)
+    result.check_returncode()  # Throw an error on non zero return code.
+    #  TODO: add some logging an error handling.
+
+
+def save_output(filepath):
     """
     Save the converted file to the output S3 bucket.
     """
@@ -74,10 +90,14 @@ def lambda_handler(event, context):
         sourcefileid = response['Metadata']['sourcefileid']
 
         download_path = '/tmp/{}{}'.format(uuid.uuid4(), key)
-        # upload_path = '/tmp/resized-{}'.format(key)
-        upload_path = download_path
+        upload_path = '{}.pdf'.format(download_path)  # Conversion appends .pdf extension to file.
 
+        # Download the input file from S3
         s3_client.download_file(bucket, key, download_path)
 
-        # TODO: pass the output bucket name in at runtime.
+        # Convert the input file to PDF.
+        convert_file(download_path)
+
+        # Upload the converted file to the output S3 as the original name.
+        # TODO: add some metadata to the object.
         s3_client.upload_file(upload_path, os.environ['OutputBucket'], key)
