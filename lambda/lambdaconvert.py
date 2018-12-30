@@ -35,7 +35,7 @@ def get_libreoffice(downloadurl):
         logger.info('Libre Office executable exists already.')
 
 
-def convert_file(filepath):
+def convert_file(filepath, targetformat):
     """
     Convert the input file to PDF.
     Return the path of the converted document/
@@ -50,7 +50,7 @@ def convert_file(filepath):
         "--nologo",
         "--norestore",
         "--convert-to",
-        "pdf",
+        targetformat,
         "--outdir",
         "/tmp",
         filepath  # Needs to be the absolute path as a string
@@ -59,12 +59,6 @@ def convert_file(filepath):
     result = subprocess.run(commandargs, stdout=subprocess.PIPE)
     result.check_returncode()  # Throw an error on non zero return code.
     #  TODO: add some logging an error handling.
-
-
-def save_output(filepath):
-    """
-    Save the converted file to the output S3 bucket.
-    """
 
 
 def lambda_handler(event, context):
@@ -97,12 +91,16 @@ def lambda_handler(event, context):
         # Download the input file from S3
         s3_client.download_file(bucket, key, download_path)
 
-        # Convert the input file to PDF.
-        convert_file(download_path)
+        # Convert the input file.
+        convert_file(download_path, targetformat)
 
         # Upload the converted file to the output S3 as the original name.
-        # TODO: add some metadata to the object.
-        s3_client.upload_file(upload_path, os.environ['OutputBucket'], key)
+        metadata = {"Metadata": {"id": conversionid, "sourcefileid": sourcefileid}}
+        s3_client.upload_file(upload_path, os.environ['OutputBucket'], key, ExtraArgs=metadata)
 
         # Remove file from input bucket
-        # Remove file from temp
+        s3_client.delete_object(Bucket=bucket, Key=key)
+
+        # Remove files from temp
+        os.remove(download_path)
+        os.remove(upload_path)

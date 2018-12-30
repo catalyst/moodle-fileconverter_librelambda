@@ -210,8 +210,8 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
             ));
         });
 
-        $keyid = 'AKIAI2UFNQ67IZURMV7Q';
-        $secret = '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';
+        $keyid = 'AHIAI2UFNQ67IZ7RMV4Q';
+        $secret = '9QT5TnfB5LjkMu9qm8U63v/WaFu9qYwUqOZyXvBy';
         $region = 'ap-southeast-2';
         $bucketprefix = '';
 

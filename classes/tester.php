@@ -152,6 +152,12 @@ class tester {
     }
 
 
+    /**
+     * Put file into S3 bucket
+     *
+     * @param string $filepath
+     * @return \stdClass
+     */
     private function bucket_put_object($filepath){
         $result = new \stdClass();
         $result->status = true;
@@ -164,7 +170,7 @@ class tester {
         $uploadparams = array(
             'Bucket' => $this->inputbucket, // REQUIRED.
             'Key' => $fileinfo['filename'], // REQUIRED.
-            'Body' => $filepath, // REQUIRED.
+            'SourceFile' => $filepath, // REQUIRED.
             'Metadata' => array(
                 'targetformat' => 'pdf',
                 'id' => 'abc123',

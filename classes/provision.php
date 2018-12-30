@@ -255,9 +255,9 @@ class provision {
         try {
             $document = '{"Version":"2012-10-17","Statement":[{"Sid": "","Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}';
             $iamresult = $this->iamclient->createRole(array(
-                    'AssumeRolePolicyDocument' => $document, // REQUIRED
+                    'AssumeRolePolicyDocument' => $document, // REQUIRED.
                     'Description' => 'Lambda PDF Role',
-                    'RoleName' => 'lambda-pdf', // REQUIRED
+                    'RoleName' => 'lambda-pdf', // REQUIRED.
             ));
             $result->message = $iamresult['Role']['ARN'];
         } catch (IamException $e) {
@@ -280,9 +280,13 @@ class provision {
         $result->message = '';
 
         try {
-            $iamresult = $this->iamclient->attachRolePolicy(array(
-                    'PolicyArn' => 'arn:aws:iam::aws:policy/AWSLambdaExecute', // REQUIRED
-                    'RoleName' => 'lambda-pdf', // REQUIRED
+            $document = '{"Version": "2012-10-17",'.
+            '"Statement":[{"Effect": "Allow", "Action": ["logs:*"], "Resource": "arn:aws:logs:*:*:*"},'.
+            '{"Effect": "Allow", "Action":["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],"Resource": "arn:aws:s3:::*"}]}';
+            $iamresult = $this->iamclient->putRolePolicy(array(
+                'PolicyDocument' => $document,  // REQUIRED.
+                'PolicyName' => 'lambda-pdf-policy', // REQUIRED.
+                'RoleName' => 'lambda-pdf', // REQUIRED.
             ));
         } catch (IamException $e) {
             $result->status = false;
@@ -314,6 +318,73 @@ class provision {
             $result = $policyresult;
         } else {
             $result = $roleresult;
+        }
+
+        return $result;
+
+    }
+
+    /**
+     * Put file into S3 bucket
+     *
+     * @param string $filepath
+     * @return \stdClass
+     */
+    private function bucket_put_object($filepath, $bucketname){
+        $result = new \stdClass();
+        $result->status = true;
+        $result->code = 0;
+        $result->message = '';
+
+        $client = $this->s3client;
+        $fileinfo = pathinfo($filepath);
+
+        $uploadparams = array(
+            'Bucket' => $bucketname, // REQUIRED.
+            'Key' => $fileinfo['basename'], // REQUIRED.
+            'SourceFile' => $filepath, // REQUIRED.
+            'Metadata' => array(
+                'description' => 'This is the Libreoffice archive.',
+            )
+        );
+
+        try {
+            $putobject = $client->putObject($uploadparams);
+            $result->message = $putobject['ObjectURL'];
+
+        } catch (S3Exception $e) {
+            $result->status = false;
+            $result->code = $e->getAwsErrorCode();
+            $result->message = $e->getAwsErrorMessage();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Uploads a file to the S3 input bucket.
+     *
+     * @param string $filepath The path to the file to upload.
+     *
+     */
+    public function upload_file($filepath, $bucketname) {
+        $result = new \stdClass();
+        $result->status = true;
+        $result->code = 0;
+        $result->message = '';
+
+        // Setup the S3 client.
+        $this->create_s3_client();
+
+        // Check input bucket exists.
+        $bucketexists = $this->check_bucket_exists($bucketname);
+        if($bucketexists) {
+            // If we have bucket, upload file
+            $result = $this->bucket_put_object($filepath, $bucketname);
+        } else {
+            $result->status = false;
+            $result->code = 1;
+            $result->message= get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
         }
 
         return $result;

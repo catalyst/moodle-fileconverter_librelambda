@@ -96,7 +96,7 @@ if ($inputbucketresposnse->code != 0 ) {
 } else {
     echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
             'bucket' =>'input',
-            'location' => $outputbucketresposnse->message)) . PHP_EOL;
+            'location' => $inputbucketresposnse->message)) . PHP_EOL;
 }
 
 $outputbucketresposnse = $provisioner->create_bucket('output');
@@ -123,7 +123,21 @@ if ($iamresposnse->code != 0 ) {
             'arn' =>$iamresposnse->message)) . PHP_EOL;
 }
 
+// Upload Libre Office archive to input bucket.
+cli_heading(get_string('provision:uploadlibrearchive', 'fileconverter_librelambda'));
+
+$filepath = $CFG->dirroot . '/files/converter/librelambda/libre/lo.tar.xz';
+$libreuploadresponse = $provisioner->upload_file($filepath, $inputbucketresposnse->message);
+if ($libreuploadresponse->code != 0 ) {
+    $errormsg = $libreuploadresponse->code . ': ' . $libreuploadresponse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string('provision:librearchiveuploaded', 'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL;
+}
+
 // Create Lambda function.
+
 
 
 //  Test things
