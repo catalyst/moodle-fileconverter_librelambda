@@ -1,0 +1,41 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  This template will provision all the required resources and infrastructure
+  to convert documents using S3 and Lambda.
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Description: Lambda Converter Role
+    Properties:
+      RoleName: lambda-convert
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+  LambdaPolicy:
+    Type: AWS::IAM::Policy
+    DependsOn: LambdaRole
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:*
+          Resource: arn:aws:logs:*:*:*
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:PutObject
+          - s3:DeleteObject
+          Resource: arn:aws:s3:::*
+      PolicyName: lambda-convert-policy
+      Roles:
+        - lambda-convert
