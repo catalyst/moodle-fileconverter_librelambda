@@ -5,6 +5,24 @@ Description: >
   This template will provision all the required resources and infrastructure
   to convert documents using S3 and Lambda.
 
+Parameters:
+  BucketPrefix:
+    Type: String
+    Default: librelambdamoodle
+    Description: The input bucket that holds the Lambda and Libre Office archives.
+  ResourceBucket:
+    Type: String
+    Default: librelambdamoodle-resource
+    Description: The S3.
+  LambdaArchiveKey:
+    Type: String
+    Default: lambdaconvert.zip
+    Description: The S3 Key (filename) for the Lambda function archive.
+  LibreArchiveUrl:
+    Type: String
+    Default: https://s3-ap-southeast-2.amazonaws.com/librelamdamoodle-resource/lo.tar.xz
+    Description: The URL for the location of the Libre Office archive.
+
 Resources:
   LambdaRole:
     Type: AWS::IAM::Role
@@ -21,7 +39,6 @@ Resources:
           Action: sts:AssumeRole
   LambdaPolicy:
     Type: AWS::IAM::Policy
-    DependsOn: LambdaRole
     Properties:
       PolicyDocument:
         Version: '2012-10-17'
@@ -38,4 +55,42 @@ Resources:
           Resource: arn:aws:s3:::*
       PolicyName: lambda-convert-policy
       Roles:
-        - lambda-convert
+        - !Ref LambdaRole
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Description: Lambda Function to convert documents using Libre Office
+    Properties:
+      Code:
+        S3Bucket: !Ref ResourceBucket
+        S3Key: !Ref LambdaArchiveKey
+      Environment:
+        Variables:
+          LibreLocation: !Ref LibreArchiveUrl
+          OutputBucket: !Join [ '-', [!Ref BucketPrefix, 'output'] ]
+      FunctionName: lambdaconvert
+      Handler: lambdaconvert.lambda_handler
+      MemorySize: 256
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.6
+      Timeout: 360
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LambdaFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Join [ '', ['arn:aws:s3:::', !Ref BucketPrefix, '-', 'input'] ]
+  InputS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join [ '-', [!Ref BucketPrefix, 'input'] ]
+      AccessControl: Private
+      NotificationConfiguration:
+        LambdaConfigurations:
+        - Event: 's3:ObjectCreated:*'
+          Function: !GetAtt LambdaFunction.Arn
+  OutputS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join [ '-', [!Ref BucketPrefix, 'output'] ]
+      AccessControl: Private

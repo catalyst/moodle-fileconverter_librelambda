@@ -31,6 +31,9 @@ use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
 use Aws\Iam\IamClient;
 use Aws\Iam\Exception\IamException;
+use Aws\Lambda\LambdaClient;
+use Aws\Lambda\Exception\LambdaException;
+use GuzzleHttp\Psr7;
 
 /**
  * Class for provisioning AWS resources.
@@ -81,6 +84,12 @@ class provision {
      */
     private $iamclient;
 
+    /**
+     *
+     * @var \Aws\Lambda\LambdaClient Lambda client.
+     */
+    private $lambdaclient;
+
 
     /**
      * The constructor for the class
@@ -98,7 +107,7 @@ class provision {
         $this->region = $region;
 
         if ($this->bucketprefix == '') {
-            $this->bucketprefix = $CFG->siteidentifier;
+            $this->bucketprefix = md5($CFG->siteidentifier);
         } else {
             $this->bucketprefix = $bucketprefix;
         }
@@ -217,12 +226,13 @@ class provision {
      *
      */
     public function create_bucket($suffix) {
+        $bucketname = $this->bucketprefix . '-' . $suffix;
+
         $result = new \stdClass();
         $result->status = true;
         $result->code = 0;
         $result->message = '';
-
-        $bucketname = $this->bucketprefix . $suffix;
+        $result->bucketname = $bucketname;
 
         // Setup the S3 client.
         $this->create_s3_client();
@@ -232,6 +242,7 @@ class provision {
         $bucketexists = $this->check_bucket_exists($bucketname);
         if(!$bucketexists) {
             $result = $this->create_s3_bucket($bucketname);
+            $result->bucketname = $bucketname;
         } else {
             $result->status = false;
             $result->code = 1;
@@ -256,10 +267,10 @@ class provision {
             $document = '{"Version":"2012-10-17","Statement":[{"Sid": "","Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}';
             $iamresult = $this->iamclient->createRole(array(
                     'AssumeRolePolicyDocument' => $document, // REQUIRED.
-                    'Description' => 'Lambda PDF Role',
-                    'RoleName' => 'lambda-pdf', // REQUIRED.
+                    'Description' => 'Lambda Converter Role',
+                    'RoleName' => 'lambda-convert', // REQUIRED.
             ));
-            $result->message = $iamresult['Role']['ARN'];
+            $result->message = $iamresult['Role']['Arn'];
         } catch (IamException $e) {
             $result->status = false;
             $result->code = $e->getAwsErrorCode();
@@ -285,8 +296,8 @@ class provision {
             '{"Effect": "Allow", "Action":["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],"Resource": "arn:aws:s3:::*"}]}';
             $iamresult = $this->iamclient->putRolePolicy(array(
                 'PolicyDocument' => $document,  // REQUIRED.
-                'PolicyName' => 'lambda-pdf-policy', // REQUIRED.
-                'RoleName' => 'lambda-pdf', // REQUIRED.
+                'PolicyName' => 'lambda-convert-policy', // REQUIRED.
+                'RoleName' => 'lambda-convert', // REQUIRED.
             ));
         } catch (IamException $e) {
             $result->status = false;
@@ -389,5 +400,100 @@ class provision {
 
         return $result;
 
+    }
+    /**
+     *
+     * @param unknown $handler
+     * @return \Aws\Iam\IamClient
+     */
+    public function create_lambda_client($handler=null){
+        $connectionoptions = array(
+            'version' => 'latest',
+            'region' => $this->region,
+            'credentials' => [
+                'key' => $this->keyid,
+                'secret' => $this->secret
+            ]);
+
+        // Allow handler overriding for testing.
+        if ($handler!=null) {
+            $connectionoptions['handler'] = $handler;
+        }
+
+        // Only create client if it hasn't already been done.
+        if ($this->lambdaclient== null) {
+            $this->lambdaclient= new LambdaClient($connectionoptions);
+        }
+
+        return $this->iamclient;
+    }
+
+    public function lambda_create($params){
+        $result = new \stdClass();
+        $result->status = true;
+        $result->code = 0;
+        $result->message = '';
+
+        // Setup the Lambda client.
+        $this->create_lambda_client();
+
+        // Create Lambda function
+        $handle = fopen($params['lambdarchive'] , 'r');
+        $stream = Psr7\stream_for($handle);
+
+        $lambdaparams = array(
+            'Code' => array( // REQUIRED
+                'ZipFile' => $stream,
+            ),
+            'Description' => 'Libre Office document converter function',
+            'Environment' => array(
+                'Variables' => array(
+                    'LibreLocation' => $params['librearchive'],
+                    'OutputBucket' => $params['outputbucket']
+                ),
+            ),
+            'FunctionName' => 'lambdaconvert', // REQUIRED
+            'Handler' => 'lambdaconvert.lambda_handler', // REQUIRED
+            'MemorySize' => 256,
+            'Publish' => true,
+            'Role' => $params['iamrole'], // REQUIRED
+            'Runtime' => 'python3.6', // REQUIRED
+            'Timeout' => 360
+        );
+
+        $client = $this->lambdaclient;
+
+        try {
+            $createfunction = $client->createFunction($lambdaparams);
+            $result->message = $createfunction['FunctionName'];
+
+        } catch (LambdaException $e) {
+            $result->status = false;
+            $result->code = $e->getAwsErrorCode();
+            $result->message = $e->getAwsErrorMessage();
+        }
+        fclose($handle);
+        // Create event source mapping
+        $permissionparams = array(
+            'Action' => 'lambda:InvokeFunction',
+            'FunctionName' =>  $createfunction['FunctionName'], // REQUIRED,
+            'Principal' => 'events.amazonaws.com',
+            'SourceArn' => 'arn:aws:s3:::'. $params['inputbucket'], // REQUIRED
+            'StatementId' => 'ID-1',
+        );
+
+        if ($result->code == 0) {
+            try {
+                $addpermission = $client->addPermission($permissionparams);
+                $result->message = $addpermission['Statement'];
+
+            } catch (LambdaException $e) {
+                $result->status = false;
+                $result->code = $e->getAwsErrorCode();
+                $result->message = $e->getAwsErrorMessage();
+            }
+        }
+
+        return $result;
     }
 }

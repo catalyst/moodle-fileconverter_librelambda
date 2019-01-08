@@ -65,15 +65,14 @@ Options:
                           e.g. ap-southeast-2
 --bucket-prefix=STRING    The prefix to use for the created AWS S3 buckets.
                           Bucket names need to be globally unique.
-                          If this isn't provided the Moodle site identifier
-                          will be used instead.
+                          If this isn't provided the a random prefix will be generated.
 --set-config              Will update the plugin configuration with the resources
                           created by this script.
 
 -h, --help                Print out this help
 
 Example:
-\$sudo -u www-data files/converter/librelambda/cli/provision.php \
+\$sudo -u www-data php files/converter/librelambda/cli/provision.php \
 --keyid=QKIAIVYPO6FXJESSW4HQ \
 --secret=CzI0r0FvPf/TqPwCoiPOdhztEkvkyULbWike1WqA \
 --region=ap-southeast-2
@@ -83,51 +82,27 @@ Example:
     die;
 }
 
-$provisioner = new \fileconverter_librelambda\provision($options['keyid'], $options['secret'], !$options['region'], $options['bucket-prefix']);
+$provisioner = new \fileconverter_librelambda\provision($options['keyid'], $options['secret'], $options['region'], $options['bucket-prefix']);
 
 // Create S3 buckets.
 cli_heading(get_string('provision:creatings3', 'fileconverter_librelambda'));
 
-$inputbucketresposnse = $provisioner->create_bucket('input');
-if ($inputbucketresposnse->code != 0 ) {
-    $errormsg = $inputbucketresposnse->code . ': ' . $inputbucketresposnse->message;
+$resourcebucketresposnse = $provisioner->create_bucket('resource');
+if ($resourcebucketresposnse->code != 0 ) {
+    $errormsg = $resourcebucketresposnse->code . ': ' . $resourcebucketresposnse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
     echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
             'bucket' =>'input',
-            'location' => $inputbucketresposnse->message)) . PHP_EOL;
-}
-
-$outputbucketresposnse = $provisioner->create_bucket('output');
-if ($outputbucketresposnse->code != 0 ) {
-    $errormsg = $outputbucketresposnse->code . ': ' . $outputbucketresposnse->message;
-    throw new \moodle_exception($errormsg);
-    exit(1);
-} else {
-    echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
-            'bucket' =>'output',
-            'location' => $outputbucketresposnse->message)) . PHP_EOL;
-}
-
-// Create IAM role.
-cli_heading(get_string('provision:creatingiam', 'fileconverter_librelambda'));
-
-$iamresposnse = $provisioner->create_and_attach_iam();
-if ($iamresposnse->code != 0 ) {
-    $errormsg = $iamresposnse->code . ': ' . $iamresposnse->message;
-    throw new \moodle_exception($errormsg);
-    exit(1);
-} else {
-    echo get_string('provision:iamcreated', 'fileconverter_librelambda', array(
-            'arn' =>$iamresposnse->message)) . PHP_EOL;
+            'location' => $resourcebucketresposnse->message)) . PHP_EOL;
 }
 
 // Upload Libre Office archive to input bucket.
 cli_heading(get_string('provision:uploadlibrearchive', 'fileconverter_librelambda'));
 
-$filepath = $CFG->dirroot . '/files/converter/librelambda/libre/lo.tar.xz';
-$libreuploadresponse = $provisioner->upload_file($filepath, $inputbucketresposnse->message);
+$librepath = $CFG->dirroot . '/files/converter/librelambda/libre/lo.tar.xz';
+$libreuploadresponse = $provisioner->upload_file($librepath, $resourcebucketresposnse->bucketname);
 if ($libreuploadresponse->code != 0 ) {
     $errormsg = $libreuploadresponse->code . ': ' . $libreuploadresponse->message;
     throw new \moodle_exception($errormsg);
@@ -136,11 +111,35 @@ if ($libreuploadresponse->code != 0 ) {
     echo get_string('provision:librearchiveuploaded', 'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL;
 }
 
-// Create Lambda function.
+// Upload Lambda funtion to input bucket.
+cli_heading(get_string('provision:uploadlambdaarchive', 'fileconverter_librelambda'));
+$lambdapath = $CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip';
+$lambdauploadresponse = $provisioner->upload_file($lambdapath, $resourcebucketresposnse->bucketname);
+if ($lambdauploadresponse->code != 0 ) {
+    $errormsg = $lambdauploadresponse->code . ': ' . $lambdauploadresponse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string('provision:lambdaarchiveuploaded', 'fileconverter_librelambda', $lambdauploadresponse->message) . PHP_EOL;
+}
+
+// Create Lambda function, IAM roles and the rest of the stack.
+cli_heading(get_string('provision:stack', 'fileconverter_librelambda'));
+$cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip';
+
+$params = array(
+    'lambdarchive' => $lambdapath,
+    'inputbucket' => $resourcebucketresposnse->bucketname,
+    'outputbucket' =>$outputbucketresposnse->bucketname,
+    'librearchive' => $libreuploadresponse->message,
+    'iamrole' => $iamresposnse->message
+);
 
 
+// Print summary.
 
-//  Test things
+
+//  Test things.
 
 
 exit(0); // 0 means success
