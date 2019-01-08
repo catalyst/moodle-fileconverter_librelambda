@@ -84,7 +84,7 @@ Example:
 
 $provisioner = new \fileconverter_librelambda\provision($options['keyid'], $options['secret'], $options['region'], $options['bucket-prefix']);
 
-// Create S3 buckets.
+// Create S3 resorce bucket.
 cli_heading(get_string('provision:creatings3', 'fileconverter_librelambda'));
 
 $resourcebucketresposnse = $provisioner->create_bucket('resource');
@@ -98,7 +98,7 @@ if ($resourcebucketresposnse->code != 0 ) {
             'location' => $resourcebucketresposnse->message)) . PHP_EOL;
 }
 
-// Upload Libre Office archive to input bucket.
+// Upload Libre Office archive to resource bucket.
 cli_heading(get_string('provision:uploadlibrearchive', 'fileconverter_librelambda'));
 
 $librepath = $CFG->dirroot . '/files/converter/librelambda/libre/lo.tar.xz';
@@ -125,14 +125,13 @@ if ($lambdauploadresponse->code != 0 ) {
 
 // Create Lambda function, IAM roles and the rest of the stack.
 cli_heading(get_string('provision:stack', 'fileconverter_librelambda'));
-$cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip';
+$cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template';
 
 $params = array(
-    'lambdarchive' => $lambdapath,
-    'inputbucket' => $resourcebucketresposnse->bucketname,
-    'outputbucket' =>$outputbucketresposnse->bucketname,
-    'librearchive' => $libreuploadresponse->message,
-    'iamrole' => $iamresposnse->message
+    'bucketprefix' => $provisioner->get_bucket_prefix(),
+    'lambdaarchive' => 'lambdaconvert.zip',
+    'librearchive' => 'lo.tar.xz',
+    'resourcebucket' => $resourcebucketresposnse->bucketname,
 );
 
 

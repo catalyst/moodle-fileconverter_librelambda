@@ -114,6 +114,10 @@ class provision {
 
     }
 
+    public function get_bucket_prefix() {
+        return $this->bucketprefix;
+    }
+
     /**
      * Check if the bucket already exists in AWS.
      *

@@ -8,7 +8,7 @@ import mimetypes
 import logging
 import uuid
 import tarfile
-import urllib.request
+import io
 import subprocess
 
 s3_client = boto3.client('s3')
@@ -17,7 +17,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def get_libreoffice(downloadurl):
+def get_libreoffice(librearchive, resourcebucket):
     """
     This method downloads and extracts the Libre Office tar archive and extracts
     it locally for the lambda function to use.
@@ -28,9 +28,12 @@ def get_libreoffice(downloadurl):
     # Only get Libre Office if this is a cold start and we don't arleady have it.
     if not os.path.exists('/tmp/instdir/program/soffice'):
         logger.info('Downloading and extracting Libre Office')
-        with urllib.request.urlopen(downloadurl) as response:
-            with tarfile.open(fileobj=response, mode="r|xz") as archive:
-                archive.extractall('/tmp')  # Extract to the temp directory of Lambda.
+        s3Obj = s3_client.get_object(
+            Bucket=resourcebucket,
+            Key=librearchive)
+        with tarfile.open(fileobj=s3Obj['Body'], mode="r|xz") as archive:
+            archive.extractall('/tmp')  # Extract to the temp directory of Lambda.
+
     else:
         logger.info('Libre Office executable exists already.')
 
@@ -72,8 +75,9 @@ def lambda_handler(event, context):
     """
 
     #  Get and unpack the Libre Office package.
-    libreurl = os.environ['LibreLocation']
-    get_libreoffice(libreurl)
+    librearchive = os.environ['LibreLocation']
+    resourcebucket = os.environ['ResourceBucket']
+    get_libreoffice(librearchive, resourcebucket)
 
     #  Now get and process the file from the input bucket.
     for record in event['Records']:

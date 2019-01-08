@@ -9,19 +9,19 @@ Parameters:
   BucketPrefix:
     Type: String
     Default: librelambdamoodle
-    Description: The input bucket that holds the Lambda and Libre Office archives.
+    Description: The prefix to use for the input and output buckets.
   ResourceBucket:
     Type: String
     Default: librelambdamoodle-resource
-    Description: The S3.
+    Description: The bucket that contains the Lambda and Libre Office archives.
   LambdaArchiveKey:
     Type: String
     Default: lambdaconvert.zip
     Description: The S3 Key (filename) for the Lambda function archive.
-  LibreArchiveUrl:
+  LibreArchiveKey:
     Type: String
-    Default: https://s3-ap-southeast-2.amazonaws.com/librelamdamoodle-resource/lo.tar.xz
-    Description: The URL for the location of the Libre Office archive.
+    Default: lo.tar.xz
+    Description: The S3 Key (filename) for the Libre Office function archive.
 
 Resources:
   LambdaRole:
@@ -65,8 +65,9 @@ Resources:
         S3Key: !Ref LambdaArchiveKey
       Environment:
         Variables:
-          LibreLocation: !Ref LibreArchiveUrl
+          LibreLocation: !Ref LibreArchiveKey
           OutputBucket: !Join [ '-', [!Ref BucketPrefix, 'output'] ]
+          ResourceBucket: !Ref ResourceBucket
       FunctionName: lambdaconvert
       Handler: lambdaconvert.lambda_handler
       MemorySize: 256
