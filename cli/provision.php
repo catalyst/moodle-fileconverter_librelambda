@@ -39,6 +39,7 @@ list($options, $unrecognized) = cli_get_params(
         'region'            => false,
         'bucket-prefix'     => '',
         'set-config'        => false,
+        'test-config'       => false,
     ),
     array(
         'h' => 'help'
@@ -67,6 +68,8 @@ Options:
                           Bucket names need to be globally unique.
                           If this isn't provided the a random prefix will be generated.
 --set-config              Will update the plugin configuration with the resources
+                          created by this script.
+--test-stack              Will update the plugin configuration with the resources
                           created by this script.
 
 -h, --help                Print out this help
@@ -152,6 +155,9 @@ echo get_string('provision:inputbucket', 'fileconverter_librelambda', $createsta
 echo get_string('provision:outputbucket', 'fileconverter_librelambda', $createstackresponse->OutputBucket) . PHP_EOL;
 
 // Set config.
+if ($options['set-config']) {
+    cli_heading(get_string('provision:stack', 'fileconverter_librelambda'));
+}
 
 //  Test things.
 

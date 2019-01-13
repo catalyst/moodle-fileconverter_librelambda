@@ -132,7 +132,7 @@ Outputs:
     Value: !GetAtt S3UserAccessKey.SecretAccessKey
   InputBucket:
     Description: S3 Input Bucket
-    Value: !GetAtt InputS3Bucket.BucketName
+    Value: !Ref InputS3Bucket
   OutputBucket:
     Description: S3 Output Bucket
-    Value: !GetAtt OutputS3Bucket.BucketName
+    Value: !Ref OutputS3Bucket
