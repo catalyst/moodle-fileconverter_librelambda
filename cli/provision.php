@@ -95,7 +95,7 @@ if ($resourcebucketresposnse->code != 0 ) {
 } else {
     echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
             'bucket' =>'input',
-            'location' => $resourcebucketresposnse->message)) . PHP_EOL;
+        'location' => $resourcebucketresposnse->message)) . PHP_EOL . PHP_EOL;
 }
 
 // Upload Libre Office archive to resource bucket.
@@ -108,7 +108,7 @@ if ($libreuploadresponse->code != 0 ) {
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('provision:librearchiveuploaded', 'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL;
+    echo get_string('provision:librearchiveuploaded', 'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL . PHP_EOL;
 }
 
 // Upload Lambda funtion to input bucket.
@@ -120,7 +120,7 @@ if ($lambdauploadresponse->code != 0 ) {
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('provision:lambdaarchiveuploaded', 'fileconverter_librelambda', $lambdauploadresponse->message) . PHP_EOL;
+    echo get_string('provision:lambdaarchiveuploaded', 'fileconverter_librelambda', $lambdauploadresponse->message) . PHP_EOL . PHP_EOL;
 }
 
 // Create Lambda function, IAM roles and the rest of the stack.
@@ -132,11 +132,26 @@ $params = array(
     'lambdaarchive' => 'lambdaconvert.zip',
     'librearchive' => 'lo.tar.xz',
     'resourcebucket' => $resourcebucketresposnse->bucketname,
+    'templatepath' => $cloudformationpath
 );
 
+$createstackresponse = $provisioner->create_stack($params);
+if ($createstackresponse->code != 0 ) {
+    $errormsg = $createstackresponse->code . ': ' . $createstackresponse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string('provision:stackcreated', 'fileconverter_librelambda', $createstackresponse->message) . PHP_EOL . PHP_EOL;
+}
 
 // Print summary.
+cli_heading(get_string('provision:stack', 'fileconverter_librelambda'));
+echo get_string('provision:s3useraccesskey', 'fileconverter_librelambda', $createstackresponse->S3UserAccessKey) . PHP_EOL;
+echo get_string('provision:s3usersecretkey', 'fileconverter_librelambda', $createstackresponse->S3UserSecretKey) . PHP_EOL;
+echo get_string('provision:inputbucket', 'fileconverter_librelambda', $createstackresponse->InputBucket) . PHP_EOL;
+echo get_string('provision:outputbucket', 'fileconverter_librelambda', $createstackresponse->OutputBucket) . PHP_EOL;
 
+// Set config.
 
 //  Test things.
 

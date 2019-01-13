@@ -29,11 +29,8 @@ require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
-use Aws\Iam\IamClient;
-use Aws\Iam\Exception\IamException;
-use Aws\Lambda\LambdaClient;
-use Aws\Lambda\Exception\LambdaException;
-use GuzzleHttp\Psr7;
+use Aws\CloudFormation\CloudFormationClient;
+use Aws\CloudFormation\Exception\CloudFormationException;
 
 /**
  * Class for provisioning AWS resources.
@@ -80,15 +77,9 @@ class provision {
 
     /**
      *
-     * @var \Aws\Iam\IamClient IAM client.
-     */
-    private $iamclient;
-
-    /**
-     *
      * @var \Aws\Lambda\LambdaClient Lambda client.
      */
-    private $lambdaclient;
+    private $cloudformationclient;
 
 
     /**
@@ -168,32 +159,6 @@ class provision {
         return $this->s3client;
     }
 
-    /**
-     *
-     * @param unknown $handler
-     * @return \Aws\Iam\IamClient
-     */
-    public function create_iam_client($handler=null){
-        $connectionoptions = array(
-                'version' => 'latest',
-                'region' => $this->region,
-                'credentials' => [
-                        'key' => $this->keyid,
-                        'secret' => $this->secret
-                ]);
-
-        // Allow handler overriding for testing.
-        if ($handler!=null) {
-            $connectionoptions['handler'] = $handler;
-        }
-
-        // Only create client if it hasn't already been done.
-        if ($this->iamclient== null) {
-            $this->iamclient= new IamClient($connectionoptions);
-        }
-
-        return $this->iamclient;
-    }
 
     /**
      *
@@ -257,87 +222,6 @@ class provision {
 
     }
 
-    /**
-     *
-     * @return \stdClass
-     */
-    private function create_iam_role() {
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
-
-        try {
-            $document = '{"Version":"2012-10-17","Statement":[{"Sid": "","Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}';
-            $iamresult = $this->iamclient->createRole(array(
-                    'AssumeRolePolicyDocument' => $document, // REQUIRED.
-                    'Description' => 'Lambda Converter Role',
-                    'RoleName' => 'lambda-convert', // REQUIRED.
-            ));
-            $result->message = $iamresult['Role']['Arn'];
-        } catch (IamException $e) {
-            $result->status = false;
-            $result->code = $e->getAwsErrorCode();
-            $result->message = $e->getAwsErrorMessage();
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     * @return \stdClass
-     */
-    private function attach_policy() {
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
-
-        try {
-            $document = '{"Version": "2012-10-17",'.
-            '"Statement":[{"Effect": "Allow", "Action": ["logs:*"], "Resource": "arn:aws:logs:*:*:*"},'.
-            '{"Effect": "Allow", "Action":["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],"Resource": "arn:aws:s3:::*"}]}';
-            $iamresult = $this->iamclient->putRolePolicy(array(
-                'PolicyDocument' => $document,  // REQUIRED.
-                'PolicyName' => 'lambda-convert-policy', // REQUIRED.
-                'RoleName' => 'lambda-convert', // REQUIRED.
-            ));
-        } catch (IamException $e) {
-            $result->status = false;
-            $result->code = $e->getAwsErrorCode();
-            $result->message = $e->getAwsErrorMessage();
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    public function create_and_attach_iam() {
-        $policyresult= new \stdClass();
-
-        // Setup the Iam client.
-        $this->create_iam_client();
-
-        // Create IAM role.
-        $roleresult = $this->create_iam_role();
-
-        if ($roleresult->status) {
-            // Attach policy.
-            $policyresult = $this->attach_policy();
-        }
-
-        if (isset($policyresult->status) && !$policyresult->status) {
-            $result = $policyresult;
-        } else {
-            $result = $roleresult;
-        }
-
-        return $result;
-
-    }
 
     /**
      * Put file into S3 bucket
@@ -410,7 +294,7 @@ class provision {
      * @param unknown $handler
      * @return \Aws\Iam\IamClient
      */
-    public function create_lambda_client($handler=null){
+    public function create_cloudformation_client($handler=null){
         $connectionoptions = array(
             'version' => 'latest',
             'region' => $this->region,
@@ -425,77 +309,116 @@ class provision {
         }
 
         // Only create client if it hasn't already been done.
-        if ($this->lambdaclient== null) {
-            $this->lambdaclient= new LambdaClient($connectionoptions);
+        if ($this->cloudformationclient == null) {
+            $this->cloudformationclient = new CloudFormationClient($connectionoptions);
         }
 
-        return $this->iamclient;
+        return $this->cloudformationclient;
     }
 
-    public function lambda_create($params){
+    public function create_stack($params){
         $result = new \stdClass();
         $result->status = true;
         $result->code = 0;
         $result->message = '';
 
-        // Setup the Lambda client.
-        $this->create_lambda_client();
+        // Setup the Cloudformation client.
+        $this->create_cloudformation_client();
 
-        // Create Lambda function
-        $handle = fopen($params['lambdarchive'] , 'r');
-        $stream = Psr7\stream_for($handle);
+        // Create stack
+        $template = file_get_contents($params['templatepath']);
 
-        $lambdaparams = array(
-            'Code' => array( // REQUIRED
-                'ZipFile' => $stream,
-            ),
-            'Description' => 'Libre Office document converter function',
-            'Environment' => array(
-                'Variables' => array(
-                    'LibreLocation' => $params['librearchive'],
-                    'OutputBucket' => $params['outputbucket']
+        $stackparams = array(
+            'Capabilities' => array('CAPABILITY_NAMED_IAM'),
+            'OnFailure' => 'DELETE',
+            'Parameters' => array(
+                array(
+                    'ParameterKey' => 'BucketPrefix',
+                    'ParameterValue' => $params['bucketprefix'],
+                ),
+                array(
+                    'ParameterKey' => 'ResourceBucket',
+                    'ParameterValue' => $params['resourcebucket'],
+                ),
+                array(
+                    'ParameterKey' => 'LambdaArchiveKey',
+                    'ParameterValue' => $params['lambdaarchive'],
+                ),
+                array(
+                    'ParameterKey' => 'LibreArchiveKey',
+                    'ParameterValue' => $params['librearchive'],
                 ),
             ),
-            'FunctionName' => 'lambdaconvert', // REQUIRED
-            'Handler' => 'lambdaconvert.lambda_handler', // REQUIRED
-            'MemorySize' => 256,
-            'Publish' => true,
-            'Role' => $params['iamrole'], // REQUIRED
-            'Runtime' => 'python3.6', // REQUIRED
-            'Timeout' => 360
+            'StackName' => 'LambdaConvertStack', // REQUIRED
+            'TemplateBody' => $template,
         );
 
-        $client = $this->lambdaclient;
+        $client = $this->cloudformationclient;
 
         try {
-            $createfunction = $client->createFunction($lambdaparams);
-            $result->message = $createfunction['FunctionName'];
+            $createstack = $client->createStack($stackparams);
+            $result->message = $createstack['StackId'];
 
-        } catch (LambdaException $e) {
+        } catch (CloudFormationException $e) {
             $result->status = false;
             $result->code = $e->getAwsErrorCode();
             $result->message = $e->getAwsErrorMessage();
         }
-        fclose($handle);
-        // Create event source mapping
-        $permissionparams = array(
-            'Action' => 'lambda:InvokeFunction',
-            'FunctionName' =>  $createfunction['FunctionName'], // REQUIRED,
-            'Principal' => 'events.amazonaws.com',
-            'SourceArn' => 'arn:aws:s3:::'. $params['inputbucket'], // REQUIRED
-            'StatementId' => 'ID-1',
-        );
 
-        if ($result->code == 0) {
-            try {
-                $addpermission = $client->addPermission($permissionparams);
-                $result->message = $addpermission['Statement'];
+        if ($result->status == true) {
+            $desctibeparams = array(
+                'StackName' => $result->message,
+            );
 
-            } catch (LambdaException $e) {
-                $result->status = false;
-                $result->code = $e->getAwsErrorCode();
-                $result->message = $e->getAwsErrorMessage();
+            // Stack creation can take several minutes.
+            // Periodically check for stack updates.
+            $timeout = time() + (60 * 5); // Five minute timeout.
+            $exitcodes = array(
+                'CREATE_FAILED',
+                'CREATE_COMPLETE',
+            );
+            $stackcreated = false;
+
+            //  Check stack creation until exit code received,
+            //  or we timeout.
+            while (time() < $timeout) {
+                $stackdetails = $client->describeStacks($desctibeparams);
+                $stackdetail = $stackdetails['Stacks'][0];
+                $stackstatus = $stackdetail['StackStatus'];
+
+                echo "Stack status: " . $stackstatus . PHP_EOL;
+
+                // Exit under cetain conditions
+                if (in_array($stackstatus, $exitcodes)){
+                    $stackcreated = true;
+                    break;
+                }
+
+                sleep(30);  // Sleep for a bit before rechecking.
             }
+
+            if ($stackcreated){
+                foreach ($stackdetail['Outputs'] as $output) {
+                    if ($output['OutputKey'] == 'S3UserAccessKey') {
+                        $result->S3UserAccessKey = $output['OutputValue'];
+                    }
+                    if ($output['OutputKey'] == 'S3UserSecretKey') {
+                        $result->S3UserSecretKey = $output['OutputValue'];
+                    }
+                    if ($output['OutputKey'] == 'InputBucket') {
+                        $result->InputBucket = $output['OutputValue'];
+                    }
+                    if ($output['OutputKey'] == 'OutputBucket') {
+                        $result->OutputBucket = $output['OutputValue'];
+                    }
+                }
+
+            } else {
+                $result->status = false;
+                $result->code = $stackstatus;
+                $result->message = 'Stack creation failed';
+            }
+
         }
 
         return $result;

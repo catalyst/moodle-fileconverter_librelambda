@@ -124,7 +124,6 @@ class tester {
         return $bucketexists;
     }
 
-
     /**
      *
      * @return \Aws\S3\S3Client

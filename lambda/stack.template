@@ -95,3 +95,44 @@ Resources:
     Properties:
       BucketName: !Join [ '-', [!Ref BucketPrefix, 'output'] ]
       AccessControl: Private
+  S3User:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: MoodleS3User
+      Policies:
+       - PolicyName: MoodleS3UserPolicy
+         PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:ListBucket
+              Resource:
+              - !Join [ '', [!GetAtt InputS3Bucket.Arn, '*'] ]
+              - !Join [ '', [!GetAtt OutputS3Bucket.Arn, '*'] ]
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              Resource:
+              - !Join [ '', [!GetAtt InputS3Bucket.Arn, '/*'] ]
+              - !Join [ '', [!GetAtt OutputS3Bucket.Arn, '/*'] ]
+  S3UserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref S3User
+
+Outputs:
+  S3UserAccessKey:
+    Description: S3 user access key
+    Value: !Ref S3UserAccessKey
+  S3UserSecretKey:
+    Description: S3 user secret key
+    Value: !GetAtt S3UserAccessKey.SecretAccessKey
+  InputBucket:
+    Description: S3 Input Bucket
+    Value: !GetAtt InputS3Bucket.BucketName
+  OutputBucket:
+    Description: S3 Output Bucket
+    Value: !GetAtt OutputS3Bucket.BucketName

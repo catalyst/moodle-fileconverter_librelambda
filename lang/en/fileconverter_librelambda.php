@@ -56,6 +56,7 @@ $string['provision:iamcreated'] = 'IAM Role and Policy created, ARN is: {$a->arn
 $string['provision:lambdaarchiveuploaded'] = 'Lambda function archive uploaded sucessfully to: {$a}';
 $string['provision:librearchiveuploaded'] = 'Libreoffice archive uploaded sucessfully to: {$a}';
 $string['provision:stack'] = 'Provisioning the Lambda function and stack resources';
+$string['provision:stackcreated'] = 'Cloudformation stack created. Stack ID is: {$a}';
 $string['provision:uploadlibrearchive'] = 'Uploading Libre Office archive to input S3 bucket';
 $string['provision:uploadlambdaarchive'] = 'Uploading Lambda archive to input S3 bucket';
 $string['test:bucketnotexists'] = 'The {$a} bucket does not exist.';
