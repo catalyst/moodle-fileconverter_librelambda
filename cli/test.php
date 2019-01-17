@@ -97,7 +97,18 @@ if ($uploadresposnse->code != 0 ) {
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('test:fileuploaded', 'fileconverter_librelambda') . PHP_EOL;
+    echo get_string('test:fileuploaded', 'fileconverter_librelambda') . PHP_EOL . PHP_EOL;
 }
+
+echo get_string('test:conversioncheck', 'fileconverter_librelambda') . PHP_EOL . PHP_EOL;
+$conversionresposnse = $tester->conversion_check($options['file']);
+if ($conversionresposnse->code != 0 ) {
+    $errormsg = $conversionresposnse->code . ': ' . $conversionresposnse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string('test:conversioncomplete', 'fileconverter_librelambda') . PHP_EOL . PHP_EOL;
+}
+
 
 exit(0); // 0 means success

@@ -39,7 +39,6 @@ list($options, $unrecognized) = cli_get_params(
         'region'            => false,
         'bucket-prefix'     => '',
         'set-config'        => false,
-        'test-config'       => false,
     ),
     array(
         'h' => 'help'
@@ -69,8 +68,6 @@ Options:
                           If this isn't provided the a random prefix will be generated.
 --set-config              Will update the plugin configuration with the resources
                           created by this script.
---test-stack              Will update the plugin configuration with the resources
-                          created by this script.
 
 -h, --help                Print out this help
 
@@ -78,7 +75,8 @@ Example:
 \$sudo -u www-data php files/converter/librelambda/cli/provision.php \
 --keyid=QKIAIVYPO6FXJESSW4HQ \
 --secret=CzI0r0FvPf/TqPwCoiPOdhztEkvkyULbWike1WqA \
---region=ap-southeast-2
+--region=ap-southeast-2 \
+--set-config
 ";
 
     echo $help;
@@ -156,10 +154,12 @@ echo get_string('provision:outputbucket', 'fileconverter_librelambda', $createst
 
 // Set config.
 if ($options['set-config']) {
-    cli_heading(get_string('provision:stack', 'fileconverter_librelambda'));
+    cli_heading(get_string('provision:setconfig', 'fileconverter_librelambda'));
+    set_config('api_key', $createstackresponse->S3UserAccessKey, 'fileconverter_librelambda');
+    set_config('api_secret', $createstackresponse->S3UserSecretKey, 'fileconverter_librelambda');
+    set_config('s3_input_bucket', $createstackresponse->InputBucket, 'fileconverter_librelambda');
+    set_config('s3_output_bucket', $createstackresponse->OutputBucket, 'fileconverter_librelambda');
+    set_config('api_region', $options['region'], 'fileconverter_librelambda');
 }
-
-//  Test things.
-
 
 exit(0); // 0 means success
