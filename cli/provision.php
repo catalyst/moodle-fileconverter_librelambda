@@ -160,6 +160,7 @@ if ($options['set-config']) {
     set_config('s3_input_bucket', $createstackresponse->InputBucket, 'fileconverter_librelambda');
     set_config('s3_output_bucket', $createstackresponse->OutputBucket, 'fileconverter_librelambda');
     set_config('api_region', $options['region'], 'fileconverter_librelambda');
+    purge_all_caches();  // Purge caches to ensure UI updates with new settings.
 }
 
 exit(0); // 0 means success
