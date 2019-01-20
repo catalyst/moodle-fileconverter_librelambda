@@ -225,7 +225,7 @@ class tester {
                 }
             }
 
-            sleep(30);  // Sleep for a bit before rechecking.
+            sleep(10);  // Sleep for a bit before rechecking.
         }
 
         // Check mime type of downloaded object.
@@ -243,7 +243,10 @@ class tester {
             fclose($tmpfile);
         }
 
-        // TODO: delete output bucket file.
+        // Delete output bucket file.
+        if ($result->code == 0) {
+            $client->deleteObject($downloadparams);
+        }
 
         return $result;
     }
