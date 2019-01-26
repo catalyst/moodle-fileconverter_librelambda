@@ -43,6 +43,7 @@ before_install:
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
 
 install:
+  - moodle-plugin-ci add-plugin catalyst/moodle-local_aws
   - moodle-plugin-ci install
 
 script:
