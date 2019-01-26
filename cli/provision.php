@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -17,6 +16,7 @@
 
 /**
  * This command line script will provision the Librelambda environment in AWS.
+ *
  * It will setup the input and output buckets as well as the Lambda function in S3.
  *
  * @package     fileconverter_librelambda
@@ -28,9 +28,9 @@ define('CLI_SCRIPT', true);
 define('CACHE_DISABLE_ALL', true);
 
 require(__DIR__.'/../../../../config.php');
-require_once($CFG->libdir.'/clilib.php');         // cli only functions
+require_once($CFG->libdir.'/clilib.php');
 
-// now get cli options
+// Get cli options.
 list($options, $unrecognized) = cli_get_params(
     array(
         'keyid'             => false,
@@ -51,8 +51,7 @@ if ($unrecognized) {
 }
 
 if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']) {
-    $help =
-"Command line Librelmbda provision.
+    $help = "Command line Librelmbda provision.
 This command line script will provision the Librelambda environment in AWS.
 It will setup the input and output buckets as well as the Lambda function in S3.
 
@@ -83,7 +82,12 @@ Example:
     die;
 }
 
-$provisioner = new \fileconverter_librelambda\provision($options['keyid'], $options['secret'], $options['region'], $options['bucket-prefix']);
+$provisioner = new \fileconverter_librelambda\provision(
+    $options['keyid'],
+    $options['secret'],
+    $options['region'],
+    $options['bucket-prefix']
+    );
 
 // Create S3 resorce bucket.
 cli_heading(get_string('provision:creatings3', 'fileconverter_librelambda'));
@@ -95,7 +99,7 @@ if ($resourcebucketresposnse->code != 0 ) {
     exit(1);
 } else {
     echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
-            'bucket' =>'input',
+        'bucket' => 'input',
         'location' => $resourcebucketresposnse->message)) . PHP_EOL . PHP_EOL;
 }
 
@@ -109,7 +113,9 @@ if ($libreuploadresponse->code != 0 ) {
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('provision:librearchiveuploaded', 'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL . PHP_EOL;
+    echo get_string(
+        'provision:librearchiveuploaded',
+        'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL . PHP_EOL;
 }
 
 // Upload Lambda funtion to input bucket.
@@ -121,7 +127,9 @@ if ($lambdauploadresponse->code != 0 ) {
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('provision:lambdaarchiveuploaded', 'fileconverter_librelambda', $lambdauploadresponse->message) . PHP_EOL . PHP_EOL;
+    echo get_string(
+        'provision:lambdaarchiveuploaded',
+        'fileconverter_librelambda', $lambdauploadresponse->message) . PHP_EOL . PHP_EOL;
 }
 
 // Create Lambda function, IAM roles and the rest of the stack.
@@ -163,4 +171,4 @@ if ($options['set-config']) {
     purge_all_caches();  // Purge caches to ensure UI updates with new settings.
 }
 
-exit(0); // 0 means success
+exit(0); // 0 means success.

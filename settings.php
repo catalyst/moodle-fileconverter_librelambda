@@ -18,7 +18,6 @@
  * Plugin administration pages are defined here.
  *
  * @package     fileconverter_librelambda
- * @category    admin
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
 
-   // Basic settings.
+    // Basic settings.
     $settings->add(new admin_setting_configtext('fileconverter_librelambda/api_key',
             get_string('settings:aws:key', 'fileconverter_librelambda'),
             get_string('settings:aws:key_help', 'fileconverter_librelambda'),

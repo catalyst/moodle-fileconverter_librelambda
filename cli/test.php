@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -27,9 +26,9 @@ define('CLI_SCRIPT', true);
 define('CACHE_DISABLE_ALL', true);
 
 require(__DIR__.'/../../../../config.php');
-require_once($CFG->libdir.'/clilib.php');         // cli only functions
+require_once($CFG->libdir.'/clilib.php');
 
-// now get cli options
+// Now get cli options.
 list($options, $unrecognized) = cli_get_params(
     array(
         'keyid'             => false,
@@ -52,8 +51,7 @@ if ($unrecognized) {
 
 if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']
     || !$options['input-bucket'] || !$options['output-bucket']) {
-    $help =
-"Command line Librelmbda provision.
+    $help = "Command line Librelmbda provision.
 This command line script will provision the Librelambda environment in AWS.
 It will setup the input and output buckets as well as the Lambda function in S3.
 
@@ -86,7 +84,12 @@ Example:
     die;
 }
 
-$tester = new \fileconverter_librelambda\tester($options['keyid'], $options['secret'], $options['region'], $options['input-bucket'], $options['output-bucket']);
+$tester = new \fileconverter_librelambda\tester(
+    $options['keyid'],
+    $options['secret'],
+    $options['region'],
+    $options['input-bucket'],
+    $options['output-bucket']);
 
 // Upload file to input S3 bucket.
 cli_heading(get_string('test:uploadfile', 'fileconverter_librelambda'));
@@ -111,4 +114,4 @@ if ($conversionresposnse->code != 0 ) {
 }
 
 
-exit(0); // 0 means success
+exit(0); // 0 means success.

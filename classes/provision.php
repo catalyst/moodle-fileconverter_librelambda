@@ -105,6 +105,11 @@ class provision {
 
     }
 
+    /**
+     * Get the S3 bucket prefix.
+     *
+     * @return string The bucket prefix.
+     */
     public function get_bucket_prefix() {
         return $this->bucketprefix;
     }
@@ -134,10 +139,12 @@ class provision {
 
 
     /**
+     * Create AWS S3 API client.
      *
+     * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
      */
-    public function create_s3_client($handler=null){
+    public function create_s3_client($handler=null) {
         $connectionoptions = array(
                 'version' => 'latest',
                 'region' => $this->region,
@@ -147,7 +154,7 @@ class provision {
                 ]);
 
         // Allow handler overriding for testing.
-        if ($handler!=null) {
+        if ($handler != null) {
             $connectionoptions['handler'] = $handler;
         }
 
@@ -161,9 +168,10 @@ class provision {
 
 
     /**
+     * Create an S3 Bucket in AWS.
      *
-     * @param string $bucketname
-     * @return \stdClass
+     * @param string $bucketname The name to use for the S3 bucket.
+     * @return \stdClass $result The result of the bucket creation.
      */
     private function create_s3_bucket($bucketname) {
         $result = new \stdClass();
@@ -173,7 +181,7 @@ class provision {
         try {
             $s3result = $this->s3client->createBucket(array(
                     'ACL' => 'private',
-                    'Bucket' => $bucketname, // REQUIRED
+                    'Bucket' => $bucketname, // Required.
                     'CreateBucketConfiguration' => array(
                             'LocationConstraint' => $this->region,
                     ),
@@ -209,13 +217,13 @@ class provision {
         // Check bucket exists.
         // If not create it.
         $bucketexists = $this->check_bucket_exists($bucketname);
-        if(!$bucketexists) {
+        if (!$bucketexists) {
             $result = $this->create_s3_bucket($bucketname);
             $result->bucketname = $bucketname;
         } else {
             $result->status = false;
             $result->code = 1;
-            $result->message= get_string('provision:bucketexists', 'fileconverter_librelambda');
+            $result->message = get_string('provision:bucketexists', 'fileconverter_librelambda');
         }
 
         return $result;
@@ -224,12 +232,13 @@ class provision {
 
 
     /**
-     * Put file into S3 bucket
+     * Put file into S3 bucket.
      *
-     * @param string $filepath
-     * @return \stdClass
+     * @param string $filepath The path to the local file to Put.
+     * @param string $bucketname Te name of the bucket to use.
+     * @return \stdClass $result The result of the Put operation.
      */
-    private function bucket_put_object($filepath, $bucketname){
+    private function bucket_put_object($filepath, $bucketname) {
         $result = new \stdClass();
         $result->status = true;
         $result->code = 0;
@@ -239,9 +248,9 @@ class provision {
         $fileinfo = pathinfo($filepath);
 
         $uploadparams = array(
-            'Bucket' => $bucketname, // REQUIRED.
-            'Key' => $fileinfo['basename'], // REQUIRED.
-            'SourceFile' => $filepath, // REQUIRED.
+            'Bucket' => $bucketname, // Required.
+            'Key' => $fileinfo['basename'], // Required.
+            'SourceFile' => $filepath, // Required.
             'Metadata' => array(
                 'description' => 'This is the Libreoffice archive.',
             )
@@ -264,7 +273,8 @@ class provision {
      * Uploads a file to the S3 input bucket.
      *
      * @param string $filepath The path to the file to upload.
-     *
+     * @param string $bucketname Te name of the bucket to use.
+     * @return \stdClass $result The result of the Put operation.
      */
     public function upload_file($filepath, $bucketname) {
         $result = new \stdClass();
@@ -277,24 +287,26 @@ class provision {
 
         // Check input bucket exists.
         $bucketexists = $this->check_bucket_exists($bucketname);
-        if($bucketexists) {
-            // If we have bucket, upload file
+        if ($bucketexists) {
+            // If we have bucket, upload file.
             $result = $this->bucket_put_object($filepath, $bucketname);
         } else {
             $result->status = false;
             $result->code = 1;
-            $result->message= get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
+            $result->message = get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
         }
 
         return $result;
 
     }
+
     /**
+     * Create and AWS Cloudformation API client.
      *
-     * @param unknown $handler
-     * @return \Aws\Iam\IamClient
+     * @param \GuzzleHttp\Handler $handler Optional handler.
+     * @return \Aws\CloudFormation\CloudFormationClient The create Cloudformation client.
      */
-    public function create_cloudformation_client($handler=null){
+    public function create_cloudformation_client($handler=null) {
         $connectionoptions = array(
             'version' => 'latest',
             'region' => $this->region,
@@ -304,7 +316,7 @@ class provision {
             ]);
 
         // Allow handler overriding for testing.
-        if ($handler!=null) {
+        if ($handler != null) {
             $connectionoptions['handler'] = $handler;
         }
 
@@ -316,7 +328,16 @@ class provision {
         return $this->cloudformationclient;
     }
 
-    public function create_stack($params){
+    /**
+     * Use cloudformation to create the "stack" in AWS.
+     * The stack creation creates the input and output S3 buckets,
+     * the required roles and user permisions, and the Lmabda function
+     * to convert documents.
+     *
+     * @param array $params The params to create the stack with.
+     * @return \stdClass $result The result of stack creation.
+     */
+    public function create_stack($params) {
         $result = new \stdClass();
         $result->status = true;
         $result->code = 0;
@@ -325,7 +346,7 @@ class provision {
         // Setup the Cloudformation client.
         $this->create_cloudformation_client();
 
-        // Create stack
+        // Create stack.
         $template = file_get_contents($params['templatepath']);
 
         $stackparams = array(
@@ -349,7 +370,7 @@ class provision {
                     'ParameterValue' => $params['librearchive'],
                 ),
             ),
-            'StackName' => 'LambdaConvertStack', // REQUIRED
+            'StackName' => 'LambdaConvertStack', // Required.
             'TemplateBody' => $template,
         );
 
@@ -379,8 +400,8 @@ class provision {
             );
             $stackcreated = false;
 
-            //  Check stack creation until exit code received,
-            //  or we timeout.
+            // Check stack creation until exit code received,
+            // or we timeout.
             while (time() < $timeout) {
                 $stackdetails = $client->describeStacks($desctibeparams);
                 $stackdetail = $stackdetails['Stacks'][0];
@@ -388,8 +409,8 @@ class provision {
 
                 echo "Stack status: " . $stackstatus . PHP_EOL;
 
-                // Exit under cetain conditions
-                if (in_array($stackstatus, $exitcodes)){
+                // Exit under cetain conditions.
+                if (in_array($stackstatus, $exitcodes)) {
                     $stackcreated = true;
                     break;
                 }
@@ -397,7 +418,7 @@ class provision {
                 sleep(30);  // Sleep for a bit before rechecking.
             }
 
-            if ($stackcreated){
+            if ($stackcreated) {
                 foreach ($stackdetail['Outputs'] as $output) {
                     if ($output['OutputKey'] == 'S3UserAccessKey') {
                         $result->S3UserAccessKey = $output['OutputValue'];

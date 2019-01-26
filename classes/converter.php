@@ -76,15 +76,17 @@ class converter implements \core_files\converter_interface {
     /**
      * Class constructor
      */
-    public function __construct(){
+    public function __construct() {
         $this->config = get_config('fileconverter_librelambda');
     }
 
     /**
+     * Create AWS S3 API client.
      *
+     * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
      */
-    public function create_client($handler=null){
+    public function create_client($handler=null) {
         $connectionoptions = array(
             'version' => 'latest',
             'region' => $this->config->api_region,
@@ -94,7 +96,7 @@ class converter implements \core_files\converter_interface {
             ]);
 
         // Allow handler overriding for testing.
-        if ($handler!=null) {
+        if ($handler != null) {
             $connectionoptions['handler'] = $handler;
         }
 
@@ -106,6 +108,13 @@ class converter implements \core_files\converter_interface {
         return $this->client;
     }
 
+    /**
+     * When an exception occurs get and return
+     * the exception details.
+     *
+     * @param \Aws\Exception $exception The thrown exception.
+     * @return string $details The details of the exception.
+     */
     private function get_exception_details($exception) {
         $message = $exception->getMessage();
 
@@ -131,6 +140,7 @@ class converter implements \core_files\converter_interface {
     /**
      * Check if the plugin has the required configuration set.
      *
+     * @param \fileconverter_librelambda\converter $converter
      * @return boolean $isset Is all configuration options set.
      */
     private static function is_config_set(\fileconverter_librelambda\converter $converter) {
@@ -151,6 +161,7 @@ class converter implements \core_files\converter_interface {
      * There is no check connection in the AWS API.
      * We use list buckets instead and check the bucket is in the list.
      *
+     * @param \fileconverter_librelambda\converter $converter
      * @return boolean true on success, false on failure.
      */
     private static function is_bucket_accessible(\fileconverter_librelambda\converter $converter) {
@@ -176,6 +187,8 @@ class converter implements \core_files\converter_interface {
      * There is no check connection in the AWS API.
      * We use list buckets instead and check the bucket is in the list.
      *
+     * @param \fileconverter_librelambda\converter $converter
+     * @param string $bucket The bucket to check.
      * @return boolean true on success, false on failure.
      */
     private static function have_bucket_permissions(\fileconverter_librelambda\converter $converter, $bucket) {
@@ -277,9 +290,9 @@ class converter implements \core_files\converter_interface {
         global $CFG;
         $file = $conversion->get_sourcefile();
         $uploadparams = array(
-            'Bucket' => $this->config->s3_input_bucket, // REQUIRED.
-            'Key' => $file->get_pathnamehash(), // REQUIRED.
-            'Body' => $file, // REQUIRED.
+            'Bucket' => $this->config->s3_input_bucket, // Required..
+            'Key' => $file->get_pathnamehash(), // Required..
+            'Body' => $file, // Required..
             'Metadata' => array(
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
@@ -306,15 +319,14 @@ class converter implements \core_files\converter_interface {
      * @return  $this;
      */
     public function poll_conversion_status(conversion $conversion) {
-        // debug_print_backtrace (DEBUG_BACKTRACE_IGNORE_ARGS, 7);
-        // error_log(print_r($conversion, true));
+
         $file = $conversion->get_sourcefile();
         $tmpdir = make_request_directory();
         $saveas = $tmpdir . '/' . $file->get_pathnamehash();
 
         $downloadparams = array(
-            'Bucket' => $this->config->s3_output_bucket, // REQUIRED
-            'Key' => $file->get_pathnamehash(), // REQUIRED
+            'Bucket' => $this->config->s3_output_bucket, // Required.
+            'Key' => $file->get_pathnamehash(), // Required.
             'SaveAs' => $saveas
         );
 
@@ -348,7 +360,6 @@ class converter implements \core_files\converter_interface {
         // This is not a one-liner because of php 5.6.
         $imports = self::$imports;
         $exports = self::$exports;
-        error_log((int)(isset($imports[$from]) && isset($exports[$to])));
         return isset($imports[$from]) && isset($exports[$to]);
     }
 

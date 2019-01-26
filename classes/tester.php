@@ -125,10 +125,12 @@ class tester {
     }
 
     /**
+     * Create AWS S3 API client.
      *
+     * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
      */
-    public function create_s3_client($handler=null){
+    public function create_s3_client($handler=null) {
         $connectionoptions = array(
                 'version' => 'latest',
                 'region' => $this->region,
@@ -138,7 +140,7 @@ class tester {
                 ]);
 
         // Allow handler overriding for testing.
-        if ($handler!=null) {
+        if ($handler != null) {
             $connectionoptions['handler'] = $handler;
         }
 
@@ -157,7 +159,7 @@ class tester {
      * @param string $filepath
      * @return \stdClass
      */
-    private function bucket_put_object($filepath){
+    private function bucket_put_object($filepath) {
         $result = new \stdClass();
         $result->status = true;
         $result->code = 0;
@@ -167,9 +169,9 @@ class tester {
         $fileinfo = pathinfo($filepath);
 
         $uploadparams = array(
-            'Bucket' => $this->inputbucket, // REQUIRED.
-            'Key' => $fileinfo['filename'], // REQUIRED.
-            'SourceFile' => $filepath, // REQUIRED.
+            'Bucket' => $this->inputbucket, // Required.
+            'Key' => $fileinfo['filename'], // Required.
+            'SourceFile' => $filepath, // Required.
             'Metadata' => array(
                 'targetformat' => 'pdf',
                 'id' => 'abc123',
@@ -190,8 +192,13 @@ class tester {
         return $result;
     }
 
-
-    private function bucket_get_object($filepath){
+    /**
+     * Check the output bucket for a successfully converted file.
+     *
+     * @param string $filepath
+     * @return \stdClass $result Result of the check.
+     */
+    private function bucket_get_object($filepath) {
         $result = new \stdClass();
         $result->status = false;
         $result->code = 1;
@@ -201,19 +208,19 @@ class tester {
         $fileinfo = pathinfo($filepath);
 
         $downloadparams = array(
-            'Bucket' => $this->outputbucket, // REQUIRED.
-            'Key' => $fileinfo['filename'], // REQUIRED.
+            'Bucket' => $this->outputbucket, // Required.
+            'Key' => $fileinfo['filename'], // Required.
         );
 
         $timeout = time() + (60 * 5); // Five minute timeout.
         $getobject = false;
 
-        //  Check for file until file available,
-        //  or we timeout.
+        // Check for file until file available,
+        // or we timeout.
         while (time() < $timeout) {
             try {
                 $getobject = $client->getObject($downloadparams);
-                break;  // We have object
+                break;  // We have object.
 
             } catch (S3Exception $e) {
                 // No such key error is expected as object may not have been converted yet.
@@ -229,7 +236,7 @@ class tester {
         }
 
         // Check mime type of downloaded object.
-        if ($getobject){
+        if ($getobject) {
             $tmpfile = tmpfile();
             fwrite($tmpfile, $getobject['Body']);
             $tmppath = stream_get_meta_data($tmpfile)['uri'];
@@ -270,19 +277,25 @@ class tester {
 
         // Check input bucket exists.
         $bucketexists = $this->check_bucket_exists($bucketname);
-        if($bucketexists) {
-            // If we have bucket, upload file
+        if ($bucketexists) {
+            // If we have bucket, upload file.
             $result = $this->bucket_put_object($filepath);
         } else {
             $result->status = false;
             $result->code = 1;
-            $result->message= get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
+            $result->message = get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
         }
 
         return $result;
 
     }
 
+    /**
+     * Check if the document conversion was successful.
+     *
+     * @param unknown $filepath
+     * @return \stdClass $result The result of the check.
+     */
     public function conversion_check($filepath) {
         $result = new \stdClass();
         $result->status = true;
@@ -296,13 +309,13 @@ class tester {
 
         // Check output bucket exists.
         $bucketexists = $this->check_bucket_exists($bucketname);
-        if($bucketexists) {
-            // If we have bucket, try to download file
+        if ($bucketexists) {
+            // If we have bucket, try to download file.
             $result = $this->bucket_get_object($filepath);
         } else {
             $result->status = false;
             $result->code = 1;
-            $result->message= get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
+            $result->message = get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
         }
 
         return $result;

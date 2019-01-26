@@ -207,15 +207,14 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
 
         // Set up the AWS mock.
         $mock = new MockHandler();
-        $mock->append(new Result(array('ObjectURL' => 's3://herpderp',)));
+        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
 
         $converter = new \fileconverter_librelambda\converter();
         $converter->create_client($mock);
 
         $convert = $converter->start_document_conversion($conversion);
 
-
-       // $this->assertFalse($result);
+        $this->assertFalse($result);
     }
 
 }
