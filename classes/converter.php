@@ -27,9 +27,6 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 
-use stored_file;
-use moodle_exception;
-use moodle_url;
 use \core_files\conversion;
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
@@ -72,6 +69,13 @@ class converter implements \core_files\converter_interface {
      * @var \Aws\S3\S3Client S3 client.
      */
     private $client;
+
+
+    /**
+     *
+     * @var integer status of current conversion.
+     */
+    public $status;
 
     /**
      * Class constructor
@@ -289,10 +293,11 @@ class converter implements \core_files\converter_interface {
     public function start_document_conversion(\core_files\conversion $conversion) {
         global $CFG;
         $file = $conversion->get_sourcefile();
+
         $uploadparams = array(
-            'Bucket' => $this->config->s3_input_bucket, // Required..
-            'Key' => $file->get_pathnamehash(), // Required..
-            'Body' => $file, // Required..
+            'Bucket' => $this->config->s3_input_bucket, // Required.
+            'Key' => $file->get_pathnamehash(), // Required.
+            'Body' => $file->get_content_file_handle(), // Required.
             'Metadata' => array(
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
@@ -305,8 +310,10 @@ class converter implements \core_files\converter_interface {
         try {
             $result = $s3client->putObject($uploadparams);
             $conversion->set('status', conversion::STATUS_IN_PROGRESS);
+            $this->status = conversion::STATUS_IN_PROGRESS;
         } catch (S3Exception $e) {
             $conversion->set('status', conversion::STATUS_FAILED);
+            $this->status = conversion::STATUS_FAILED;
         }
 
         return $this;

@@ -214,7 +214,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
 
         $convert = $converter->start_document_conversion($conversion);
 
-        $this->assertFalse($result);
+        $this->assertEquals(conversion::STATUS_IN_PROGRESS, $convert->status);
     }
 
 }
