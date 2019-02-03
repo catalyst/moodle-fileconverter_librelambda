@@ -275,7 +275,7 @@ class converter implements \core_files\converter_interface {
         }
 
         // Check output bucket permissions.
-        $bucket = $converter->config->s3_ouput_bucket;
+        $bucket = $converter->config->s3_output_bucket;
         $permissions = self::have_bucket_permissions($converter, $bucket);
         if (!$permissions->success) {
             return false;

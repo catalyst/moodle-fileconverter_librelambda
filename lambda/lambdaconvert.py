@@ -10,6 +10,7 @@ import uuid
 import tarfile
 import io
 import subprocess
+from multiprocessing import Process, Pipe
 
 s3_client = boto3.client('s3')
 

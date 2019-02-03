@@ -17,9 +17,11 @@ The aims of this plugin are to:
 The following sections outline the steps that need to be followed to install the plugin, setup Moodle and the AWS architecture to enable document conversion. The installation and setup process has the following steps:
 
 1. [Plugin Installation](#plugin-installation)
-2. [AWS Stack setup](#aws-stack-setup)
-3. [Plugin Setup](#plugin-setup)
-4. [Moodle Setup](#moodle-setup)
+2. [Moodle Setup](#moodle-setup)
+3. [AWS Stack setup](#aws-stack-setup)
+4. [Plugin Setup](#plugin-setup)
+
+**
 
 ## Supported Moodle Versions
 This plugin currently supports Moodle:
@@ -38,6 +40,32 @@ Once the plugin is installed, next the AWS Stack needs setup.
 
 **Note:** It is recommended that installation be completed via the command line instead of the Moodle user interface.
 
+## Moodle setup
+The following steps are required to setup PDF annotation in Moodle.
+
+### Enable Annotation
+PDF Annotation needs to be enabled at site level, for your Moodle installation. To do this:
+
+1. Log into the Moodle UI as a site administrator
+2. Naviagte to the Annotate PDF settings: *Site administration > Server > System paths*
+3. Enter in the path to the Ghostscript executable in the *Path to ghostscript* setting text box.
+4. Click *Save changes*
+
+**Note:** In some Moodle installations setting system paths is disabled. You may need to contact your system administrator or Moodle vendor to have this value set.
+
+### Set Ghostscript Executable
+Moodle uses Ghostscript (https://www.ghostscript.com/) to annotate the PDF files themselves. To use PDF Annotation your Moodle instance must be able to reach the Ghostscript executable. To do this:
+
+1. Log into the Moodle UI as a site administrator
+2. Naviagte to the server system path settings: *Site administration > Plugins > Activity modules > Assignment > Feedback plugins > Annotate PDF*
+
+### Enable Document Converter
+The Libre Lambda document converter must be enabled in Moodle before it can be used to convert documents. To do this:
+
+1. Log into the Moodle UI as a site administrator
+2. Naviagte to the Manage document converter settings: *Site administration > Plugins > Document converters > Manage document converters*
+3. Click the enable *eye icon* in the table row that corresponds to: *Libre Lambda Document Converter*
+
 ## AWS Stack Setup
 The following steps will setup the Amazon Web Services (AWS) infrastructure. The AWS infrastructure is required to do the actual conversion of documents into PDF. While setting up the AWS infrastructure is largely automated by scripts included in this plugin, a working knowledge of AWS is highly recommended.
 
@@ -54,59 +82,63 @@ To setup the AWS conversion stack infrastructure:
 3. Change to your Moodle instance application directory. e.g. `cd /var/www/moodle`
 4. Run the provisioning script below, replacing `<keyid>` and `<secretkey>` With the AWS API Key ID and AWS API Secret Key that you obtained in step 2. <br/> Replace `<region>` with the AWS region you wish to set up your AWS stack, e.g. `ap-southeast-2`. The list of regions avialable can be found here: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region  <br/> The command to execute is:
 
-    ```console
-    sudo -u www-data php files/converter/librelambda/cli/provision.php \
-    --keyid=<keyid> \
-    --secret=<secretkey> \
-    --region=<region> \
-    --set-config
-    ```
+```console
+sudo -u www-data php files/converter/librelambda/cli/provision.php \
+--keyid=<keyid> \
+--secret=<secretkey> \
+--region=<region> \
+--set-config
+```
 **Note:** the user may be different to www-data on your system.
 
 The `--set-config` option will automatically set the plugin settings in Moodle based on the results returned by the provisioning script.
 
 The script will return output similar to, the following:
 
-    ```console
-    == Creating resource S3 Bucket ==
-    Created input bucket, at location http://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.amazonaws.com/
+```console
+    
+== Creating resource S3 Bucket ==
+Created input bucket, at location http://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.amazonaws.com/
 
-    == Uploading Libre Office archive to resource S3 bucket ==
-    Libreoffice archive uploaded sucessfully to: https://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.ap-southeast-2.amazonaws.com/lo.tar.xz
+== Uploading Libre Office archive to resource S3 bucket ==
+Libreoffice archive uploaded sucessfully to: https://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.ap-southeast-2.amazonaws.com/lo.tar.xz
 
-    == Uploading Lambda archive to resource S3 bucket ==
-    Lambda function archive uploaded sucessfully to: https://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.ap-southeast-2.amazonaws.com/lambdaconvert.zip
+== Uploading Lambda archive to resource S3 bucket ==
+Lambda function archive uploaded sucessfully to: https://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.ap-southeast-2.amazonaws.com/lambdaconvert.zip
 
-    == Provisioning the Lambda function and stack resources ==
-    Stack status: CREATE_IN_PROGRESS
-    Stack status: CREATE_IN_PROGRESS
-    Stack status: CREATE_IN_PROGRESS
-    Stack status: CREATE_COMPLETE
-    Cloudformation stack created. Stack ID is: arn:aws:cloudformation:ap-southeast-2:693620471840:stack/LambdaConvertStack/4d609630-2760-11e9-b6a5-02181cf5d610
+== Provisioning the Lambda function and stack resources ==
+Stack status: CREATE_IN_PROGRESS
+Stack status: CREATE_IN_PROGRESS
+Stack status: CREATE_IN_PROGRESS
+Stack status: CREATE_COMPLETE
+Cloudformation stack created. Stack ID is: arn:aws:cloudformation:ap-southeast-2:693620471840:stack/LambdaConvertStack/4d609630-2760-11e9-b6a5-02181cf5d610
 
-    == Provisioning the Lambda function and stack resources ==
-    S3 user access key: AKIAI6TYTAIFC6GVUJYQ
-    S3 user secret key: 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
-    Input Bucket: ee27c5ac168fafae77a15bb7e60d6af0-input
-    Output Bucket: ee27c5ac168fafae77a15bb7e60d6af0-output
-    == Setting plugin configuration in Moodle, from returned settings. ==
+== Provisioning the Lambda function and stack resources ==
+S3 user access key: AKIAI6TYTAIFC6GVUJYQ
+S3 user secret key: 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
+Input Bucket: ee27c5ac168fafae77a15bb7e60d6af0-input
+Output Bucket: ee27c5ac168fafae77a15bb7e60d6af0-output
+== Setting plugin configuration in Moodle, from returned settings. ==
+```
 
-    ```
 ## Plugin Setup
 
-5. Set up the plugin in *Site administration > Plugins > Search > Manage global search* by selecting *elastic* as the search engine.
-6. Configure the Elasticsearch plugin at: *Site administration > Plugins > Search > Elastic*
-7. Set *hostname* and *port* of your Elasticsearch server
-8. Optionally, change the *Request size* variable. Generally this can be left as is. Some Elasticsearch providers such as AWS have a limit on how big the HTTP payload can be. Therefore we limit it to a size in bytes.
-9. To create the index and populate Elasticsearch with your site's data, run this CLI script. `sudo -u www-data php search/cli/indexer.php --force`
-10. Enable Global search in *Site administration > Advanced features*
+Once the AWS stack infrastrucutre setup has been completed, next the Libre Lambda converter plugin in Moodle needs to be configured.
 
-## Moodle setup
-Enable annotation
-ghostscript
-enable document converters
+**Note:** These steps only need to be completed if you did not use the `--set-config` option when running the AWS stack setup provisioning script.
 
-https://docs.moodle.org/36/en/Using_Assignment#Annotating_submissions
+To configure the plugin in Moodle:
+
+1. Log into the Moodle UI as a site administrator
+2. Naviagte to the Libre Lambda Document converter settings: *Site administration > Plugins > Document converters > Libre Lambda Document Converter*
+3.
+4. Click *Save changes*
+
+## Testing Document Conversion
+
+
+
+**Note:**  Cron must be configured in your Moodle instance for document conversion to operate. Information on setting up Cron on your Moodle instance can be found here: https://docs.moodle.org/36/en/Cron
 
 ## Additional Information
 The following sections provide an overview of some additional topics for this plugin and it's associated AWS architecture.
@@ -125,6 +157,8 @@ TODO: this
 
 ### Lambda Function
 TODO: this
+
+## FAQs
 
 ### Why AWS?
 TODO: this
