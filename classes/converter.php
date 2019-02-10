@@ -165,17 +165,18 @@ class converter implements \core_files\converter_interface {
      * There is no check connection in the AWS API.
      * We use list buckets instead and check the bucket is in the list.
      *
+     * @param string $bucket Name of buket to check.
      * @param \fileconverter_librelambda\converter $converter
      * @return boolean true on success, false on failure.
      */
-    private static function is_bucket_accessible(\fileconverter_librelambda\converter $converter) {
+    private static function is_bucket_accessible(\fileconverter_librelambda\converter $converter, $bucket) {
         $connection = new \stdClass();
         $connection->success = true;
         $connection->message = '';
 
         try {
             $result = $converter->client->headBucket(array(
-                'Bucket' => $converter->config->s3_input_bucket));
+                'Bucket' => $bucket));
 
             $connection->message = get_string('settings:connectionsuccess', 'fileconverter_librelambda');
         } catch (S3Exception $e) {
@@ -245,6 +246,21 @@ class converter implements \core_files\converter_interface {
         return $permissions;
     }
 
+    /**
+     * Delete the converted file from the output bucket in S3.
+     *
+     * @param string $objectkey The key of the object to delete.
+     */
+    private function delete_converted_file($objectkey) {
+        $deleteparams = array(
+            'Bucket' => $this->config->s3_output_bucket, // Required.
+            'Key' => $objectkey, // Required.
+        );
+
+        $s3client = $this->create_client();
+        $s3client->deleteObject($deleteparams);
+
+    }
 
     /**
      * Whether the plugin is configured and requirements are met.
@@ -256,14 +272,23 @@ class converter implements \core_files\converter_interface {
 
         // First check that we have the basic configuration settings set.
         if (!self::is_config_set($converter)) {
+            debugging('fileconverter_librelambda configuration not set');
             return false;
         }
 
         $converter->create_client();
 
-        // Check that we can access the S3 Buckets.
-        $connection = self::is_bucket_accessible($converter);
+        // Check that we can access the input S3 Bucket.
+        $connection = self::is_bucket_accessible($converter, $converter->config->s3_input_bucket);
         if (!$connection->success) {
+            debugging('fileconverter_librelambda cannot connect to input bucket');
+            return false;
+        }
+
+        // Check that we can access the output S3 Bucket.
+        $connection = self::is_bucket_accessible($converter, $converter->config->s3_output_bucket);
+        if (!$connection->success) {
+            debugging('fileconverter_librelambda cannot connect to output bucket');
             return false;
         }
 
@@ -271,6 +296,7 @@ class converter implements \core_files\converter_interface {
         $bucket = $converter->config->s3_input_bucket;
         $permissions = self::have_bucket_permissions($converter, $bucket);
         if (!$permissions->success) {
+            debugging('fileconverter_librelambda permissions failure on input bucket');
             return false;
         }
 
@@ -278,6 +304,7 @@ class converter implements \core_files\converter_interface {
         $bucket = $converter->config->s3_output_bucket;
         $permissions = self::have_bucket_permissions($converter, $bucket);
         if (!$permissions->success) {
+            debugging('fileconverter_librelambda permissions failure on output bucket');
             return false;
         }
 
@@ -288,10 +315,9 @@ class converter implements \core_files\converter_interface {
      * Convert a document to a new format and return a conversion object relating to the conversion in progress.
      *
      * @param   \core_files\conversion $conversion The file to be converted
-     * @return  this
+     * @return  $this
      */
     public function start_document_conversion(\core_files\conversion $conversion) {
-        global $CFG;
         $file = $conversion->get_sourcefile();
 
         $uploadparams = array(
@@ -315,6 +341,7 @@ class converter implements \core_files\converter_interface {
             $conversion->set('status', conversion::STATUS_FAILED);
             $this->status = conversion::STATUS_FAILED;
         }
+        $conversion->update();
 
         return $this;
     }
@@ -326,6 +353,11 @@ class converter implements \core_files\converter_interface {
      * @return  $this;
      */
     public function poll_conversion_status(conversion $conversion) {
+
+        // If conversion is complete return early.
+        if ($conversion->get('status') == conversion::STATUS_COMPLETE) {
+            return $this;
+        }
 
         $file = $conversion->get_sourcefile();
         $tmpdir = make_request_directory();
@@ -343,7 +375,7 @@ class converter implements \core_files\converter_interface {
             $result = $s3client->getObject($downloadparams);
             $conversion->store_destfile_from_path($saveas);
             $conversion->set('status', conversion::STATUS_COMPLETE);
-            $conversion->update();
+            $this->delete_converted_file($file->get_pathnamehash());
         } catch (S3Exception $e) {
             $errorcode = $e->getAwsErrorCode();
             if ($errorcode == 'NoSuchKey') {
@@ -351,9 +383,12 @@ class converter implements \core_files\converter_interface {
             } else {
                 $conversion->set('status', conversion::STATUS_FAILED);
             }
+
         }
+        $conversion->update();
 
         return $this;
+
     }
 
     /**
