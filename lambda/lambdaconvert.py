@@ -92,6 +92,30 @@ def convert_file(filepath, targetformat):
     result.check_returncode()  # Throw an error on non zero return code.
     #  TODO: add some logging an error handling.
 
+def action_multiprocessing(multiprocesses):
+    """
+    Process multiple actions at once.
+    This is just a thin wrapper around multiprocessing.Process. Lambda has a limited
+    environment so we can only use select multiprocessing tools. We pass in a list of dictionaries
+    of the methods we want to run along with their args and kwargs and this method will "queue" them
+    up and then execute them.
+    """
+    processes = []  # create a list to keep all processes
+    parent_connections = []  # create a list to keep connections
+
+    for multiprocess in multiprocesses:
+        parent_conn, child_conn = Pipe()  # Create a pipe for communication.
+        parent_connections.append(parent_conn)
+        process = Process(target=multiprocess['method'], args=multiprocess['processargs'], kwargs=multiprocess['proxesskwargs'])
+        processes.append(process)
+
+    # Start all processes.
+    for process in processes:
+        process.start()
+
+    # Make sure that all processes have finished.
+    for process in processes:
+        process.join()
 
 def lambda_handler(event, context):
     """
@@ -131,63 +155,52 @@ def lambda_handler(event, context):
 
         # First multiprocessing split.
         # Download LibreOffice and input bucket object.
-        processes = []  # create a list to keep all processes
-        parent_connections = []  # create a list to keep connections
-
-        # Download LibreOffice
-        parent_conn, child_conn = Pipe()  # Create a pipe for communication.
-        parent_connections.append(parent_conn)
-        process = Process(target=get_libreoffice, args=(librearchive, resourcebucket,))
-        processes.append(process)
-
-        # Download the input file from S3
-        parent_conn, child_conn = Pipe()  # Create a pipe for communication.
-        parent_connections.append(parent_conn)
-        process = Process(target=s3_client.download_file, args=(bucket, key, download_path,))
-        processes.append(process)
-
-        # Start all processes.
-        for process in processes:
-            process.start()
-
-        # Make sure that all processes have finished.
-        for process in processes:
-            process.join()
+        multiprocesses = (
+            {
+            'method' : get_libreoffice,
+            'processargs': (librearchive, resourcebucket,),
+            'proxesskwargs': {}
+            },
+            {
+            'method' : s3_client.download_file,
+            'processargs': (bucket, key, download_path,),
+            'proxesskwargs': {}
+            },
+        )
+        action_multiprocessing(multiprocesses)
 
         # Second multiprocessing split.
         # Convert file and remove original from input bucket.
-        processes = []  # create a list to keep all processes
-        parent_connections = []  # create a list to keep connections
-
-        # Convert the input file.
-        parent_conn, child_conn = Pipe()  # Create a pipe for communication.
-        parent_connections.append(parent_conn)
-        process = Process(target=convert_file, args=(download_path, targetformat,))
-        processes.append(process)
-
-        # Remove file from input bucket
-        parent_conn, child_conn = Pipe()  # Create a pipe for communication.
-        parent_connections.append(parent_conn)
-        process = Process(target=s3_client.delete_object, kwargs={'Bucket':bucket, 'Key':key})
-        processes.append(process)
-
-         # Start all processes.
-        for process in processes:
-            process.start()
-
-        # Make sure that all processes have finished.
-        for process in processes:
-            process.join()
+        multiprocesses = (
+            {
+            'method' : convert_file,
+            'processargs': (download_path, targetformat,),
+            'proxesskwargs': {}
+            },
+            {
+            'method' : s3_client.delete_object,
+            'processargs': (),
+            'proxesskwargs': {'Bucket':bucket, 'Key':key}
+            },
+        )
+        action_multiprocessing(multiprocesses)
 
         # Third multiprocessing split.
         # Upload converted file to output bucket and delete local input.
+        metadata = {"Metadata": {"id": conversionid, "sourcefileid": sourcefileid}}
+        multiprocesses = (
+            {
+            'method' : s3_client.upload_file,
+            'processargs': (upload_path, os.environ['OutputBucket'], key,),
+            'proxesskwargs': {'ExtraArgs': metadata}
+            },
+            {
+            'method' : os.remove,
+            'processargs': (download_path,),
+            'proxesskwargs': {}
+            },
+        )
+        action_multiprocessing(multiprocesses)
 
         # Delete local output file.
-
-        # Upload the converted file to the output S3 as the original name.
-        metadata = {"Metadata": {"id": conversionid, "sourcefileid": sourcefileid}}
-        s3_client.upload_file(upload_path, os.environ['OutputBucket'], key, ExtraArgs=metadata)
-
-        # Remove files from temp
-        os.remove(download_path)
         os.remove(upload_path)
