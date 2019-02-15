@@ -401,6 +401,7 @@ class provision {
             $exitcodes = array(
                 'CREATE_FAILED',
                 'CREATE_COMPLETE',
+                'DELETE_COMPLETE'
             );
             $stackcreated = false;
 
