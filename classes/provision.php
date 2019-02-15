@@ -366,6 +366,10 @@ class provision {
                     'ParameterValue' => $params['lambdaarchive'],
                 ),
                 array(
+                    'ParameterKey' => 'LambdaLayerKey',
+                    'ParameterValue' => $params['lambdalayer'],
+                ),
+                array(
                     'ParameterKey' => 'LibreArchiveKey',
                     'ParameterValue' => $params['librearchive'],
                 ),

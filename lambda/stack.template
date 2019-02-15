@@ -18,6 +18,10 @@ Parameters:
     Type: String
     Default: lambdaconvert.zip
     Description: The S3 Key (filename) for the Lambda function archive.
+  LambdaLayerKey:
+    Type: String
+    Default: lo.zip
+    Description: The S3 Key (filename) for the Lambda layer archive.
   LibreArchiveKey:
     Type: String
     Default: lo.tar.xz
@@ -56,6 +60,14 @@ Resources:
       PolicyName: lambda-convert-policy
       Roles:
         - !Ref LambdaRole
+  LambdaLayer:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      Content:
+        S3Bucket: !Ref ResourceBucket
+        S3Key: !Ref LambdaLayerKey
+      Description: The LibreOffice archive to use to convert files
+      LayerName: LibreOffice
   LambdaFunction:
     Type: AWS::Lambda::Function
     Description: Lambda Function to convert documents using Libre Office
@@ -74,6 +86,8 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.6
       Timeout: 360
+      Layers:
+        - !Ref LambdaLayer
   LambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:

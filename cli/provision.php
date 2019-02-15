@@ -89,7 +89,7 @@ $provisioner = new \fileconverter_librelambda\provision(
     $options['bucket-prefix']
     );
 
-// Create S3 resorce bucket.
+// Create S3 resource bucket.
 cli_heading(get_string('provision:creatings3', 'fileconverter_librelambda'));
 
 $resourcebucketresposnse = $provisioner->create_bucket('resource');
@@ -118,7 +118,7 @@ if ($libreuploadresponse->code != 0 ) {
         'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL . PHP_EOL;
 }
 
-// Upload Lambda funtion to input bucket.
+// Upload Lambda funtion code to resource bucket.
 cli_heading(get_string('provision:uploadlambdaarchive', 'fileconverter_librelambda'));
 $lambdapath = $CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip';
 $lambdauploadresponse = $provisioner->upload_file($lambdapath, $resourcebucketresposnse->bucketname);
@@ -132,6 +132,30 @@ if ($lambdauploadresponse->code != 0 ) {
         'fileconverter_librelambda', $lambdauploadresponse->message) . PHP_EOL . PHP_EOL;
 }
 
+// Upload Lambda layer to resource bucket.
+cli_heading(get_string('provision:uploadlambdalayer', 'fileconverter_librelambda'));
+
+// First we make the Libre archive a zip file so it can be a Lambda layer.
+$tmpfname = sys_get_temp_dir() . 'lo.zip';
+$zip = new ZipArchive();
+$zip->open($tmpfname, ZipArchive::CREATE);
+$zip->addFile($librepath);
+$zip->close();
+
+// Next upload the Zip to the resource bucket.
+$layeruploadresponse = $provisioner->upload_file($lambdapath, $resourcebucketresposnse->bucketname);
+if ($layeruploadresponse->code != 0 ) {
+    $errormsg = $layeruploadresponse->code . ': ' . $layeruploadresponse->message;
+    throw new \moodle_exception($errormsg);
+    exit(1);
+} else {
+    echo get_string(
+            'provision:lambdalayeruploaded',
+            'fileconverter_librelambda', $layeruploadresponse->message) . PHP_EOL . PHP_EOL;
+}
+
+unlink($tmpfname);  // Remove temp file.
+
 // Create Lambda function, IAM roles and the rest of the stack.
 cli_heading(get_string('provision:stack', 'fileconverter_librelambda'));
 $cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template';
@@ -139,6 +163,7 @@ $cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/stack
 $params = array(
     'bucketprefix' => $provisioner->get_bucket_prefix(),
     'lambdaarchive' => 'lambdaconvert.zip',
+    'lambdalayer' => 'lo.zip',
     'librearchive' => 'lo.tar.xz',
     'resourcebucket' => $resourcebucketresposnse->bucketname,
     'templatepath' => $cloudformationpath
