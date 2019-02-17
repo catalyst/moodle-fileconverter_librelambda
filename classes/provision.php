@@ -369,10 +369,6 @@ class provision {
                     'ParameterKey' => 'LambdaLayerKey',
                     'ParameterValue' => $params['lambdalayer'],
                 ),
-                array(
-                    'ParameterKey' => 'LibreArchiveKey',
-                    'ParameterValue' => $params['librearchive'],
-                ),
             ),
             'StackName' => 'LambdaConvertStack', // Required.
             'TemplateBody' => $template,

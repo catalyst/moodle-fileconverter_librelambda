@@ -17,7 +17,7 @@ s3_client = boto3.client('s3')
 logger = logging.getLogger()
 
 
-def get_libreoffice(librearchive, resourcebucket):
+def get_libreoffice():
     """
     This method downloads and extracts the Libre Office tar archive and extracts
     it locally for the lambda function to use.
@@ -28,10 +28,7 @@ def get_libreoffice(librearchive, resourcebucket):
     # Only get Libre Office if this is a cold start and we don't arleady have it.
     if not os.path.exists('/tmp/instdir/program/soffice'):
         logger.info('Downloading and extracting Libre Office')
-        s3Obj = s3_client.get_object(
-            Bucket=resourcebucket,
-            Key=librearchive)
-        with tarfile.open(fileobj=s3Obj['Body'], mode="r|xz") as archive:
+        with tarfile.open(name='/opt/lo.tar.xz', mode="r|xz") as archive:
             archive.extractall('/tmp')  # Extract to the temp directory of Lambda.
 
     else:
@@ -92,6 +89,7 @@ def convert_file(filepath, targetformat):
     result.check_returncode()  # Throw an error on non zero return code.
     #  TODO: add some logging an error handling.
 
+
 def action_multiprocessing(multiprocesses):
     """
     Process multiple actions at once.
@@ -117,6 +115,7 @@ def action_multiprocessing(multiprocesses):
     for process in processes:
         process.join()
 
+
 def lambda_handler(event, context):
     """
     lambda_handler is the entry point that is invoked when the lambda function is called,
@@ -130,10 +129,6 @@ def lambda_handler(event, context):
     #  Set logging
     logging_level = os.environ.get('LoggingLevel', logging.ERROR)
     logger.setLevel(int(logging_level))
-
-    #  Get and unpack the Libre Office package.
-    librearchive = os.environ['LibreLocation']
-    resourcebucket = os.environ['ResourceBucket']
 
     #  Now get and process the file from the input bucket.
     for record in event['Records']:
@@ -158,7 +153,7 @@ def lambda_handler(event, context):
         multiprocesses = (
             {
             'method' : get_libreoffice,
-            'processargs': (librearchive, resourcebucket,),
+            'processargs': (),
             'proxesskwargs': {}
             },
             {

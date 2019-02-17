@@ -106,18 +106,6 @@ if ($resourcebucketresposnse->code != 0 ) {
 // Upload Libre Office archive to resource bucket.
 cli_heading(get_string('provision:uploadlibrearchive', 'fileconverter_librelambda'));
 
-$librepath = $CFG->dirroot . '/files/converter/librelambda/libre/lo.tar.xz';
-$libreuploadresponse = $provisioner->upload_file($librepath, $resourcebucketresposnse->bucketname);
-if ($libreuploadresponse->code != 0 ) {
-    $errormsg = $libreuploadresponse->code . ': ' . $libreuploadresponse->message;
-    throw new \moodle_exception($errormsg);
-    exit(1);
-} else {
-    echo get_string(
-        'provision:librearchiveuploaded',
-        'fileconverter_librelambda', $libreuploadresponse->message) . PHP_EOL . PHP_EOL;
-}
-
 // Upload Lambda funtion code to resource bucket.
 cli_heading(get_string('provision:uploadlambdaarchive', 'fileconverter_librelambda'));
 $lambdapath = $CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip';
@@ -136,10 +124,11 @@ if ($lambdauploadresponse->code != 0 ) {
 cli_heading(get_string('provision:uploadlambdalayer', 'fileconverter_librelambda'));
 
 // First we make the Libre archive a zip file so it can be a Lambda layer.
+$librepath = $CFG->dirroot . '/files/converter/librelambda/libre/lo.tar.xz';
 $tmpfname = sys_get_temp_dir() . '/lo.zip';
 $zip = new ZipArchive();
 $zip->open($tmpfname, ZipArchive::CREATE);
-$zip->addFile($librepath);
+$zip->addFile($librepath, 'lo.tar.xz');
 $zip->close();
 
 // Next upload the Zip to the resource bucket.
@@ -164,7 +153,6 @@ $params = array(
     'bucketprefix' => $provisioner->get_bucket_prefix(),
     'lambdaarchive' => 'lambdaconvert.zip',
     'lambdalayer' => 'lo.zip',
-    'librearchive' => 'lo.tar.xz',
     'resourcebucket' => $resourcebucketresposnse->bucketname,
     'templatepath' => $cloudformationpath
 );

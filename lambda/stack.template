@@ -13,7 +13,7 @@ Parameters:
   ResourceBucket:
     Type: String
     Default: librelambdamoodle-resource
-    Description: The bucket that contains the Lambda and Libre Office archives.
+    Description: The bucket that contains the Lambda archive.
   LambdaArchiveKey:
     Type: String
     Default: lambdaconvert.zip
@@ -22,10 +22,6 @@ Parameters:
     Type: String
     Default: lo.zip
     Description: The S3 Key (filename) for the Lambda layer archive.
-  LibreArchiveKey:
-    Type: String
-    Default: lo.tar.xz
-    Description: The S3 Key (filename) for the Libre Office function archive.
 
 Resources:
   LambdaRole:
@@ -60,14 +56,15 @@ Resources:
       PolicyName: lambda-convert-policy
       Roles:
         - !Ref LambdaRole
-  LambdaLayer:
+  LambdaOfficeLayer:
     Type: "AWS::Lambda::LayerVersion"
+    DeletionPolicy: Delete
     Properties:
       Content:
         S3Bucket: !Ref ResourceBucket
         S3Key: !Ref LambdaLayerKey
       Description: The LibreOffice archive to use to convert files
-      LayerName: LibreOffice
+      LayerName: LambdaOfficeLayer
   LambdaFunction:
     Type: AWS::Lambda::Function
     Description: Lambda Function to convert documents using Libre Office
@@ -77,9 +74,7 @@ Resources:
         S3Key: !Ref LambdaArchiveKey
       Environment:
         Variables:
-          LibreLocation: !Ref LibreArchiveKey
           OutputBucket: !Join [ '-', [!Ref BucketPrefix, 'output'] ]
-          ResourceBucket: !Ref ResourceBucket
       FunctionName: lambdaconvert
       Handler: lambdaconvert.lambda_handler
       MemorySize: 256
@@ -87,7 +82,7 @@ Resources:
       Runtime: python3.6
       Timeout: 360
       Layers:
-        - !Ref LambdaLayer
+        - !Ref LambdaOfficeLayer
   LambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -97,6 +92,7 @@ Resources:
       SourceArn: !Join [ '', ['arn:aws:s3:::', !Ref BucketPrefix, '-', 'input'] ]
   InputS3Bucket:
     Type: AWS::S3::Bucket
+    DependsOn: LambdaInvokePermission
     Properties:
       BucketName: !Join [ '-', [!Ref BucketPrefix, 'input'] ]
       AccessControl: Private
