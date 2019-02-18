@@ -15,20 +15,26 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Definition of LibreLambda converter scheduled tasks.
  *
- * @package     fileconverter_librelambda
+ * @package   fileconverter_librelambda
+ * @category  task
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'fileconverter_librelambda';
-$plugin->release = '2019021800';
-$plugin->version = 2019021800;
-$plugin->requires = 2018051700;
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->dependencies = array(
-        'local_aws' => 2018061900
+/* List of handlers */
+
+$tasks = array(
+    array(
+        'classname' => 'fileconverter_librelambda\task\convert_submissions',
+        'blocking' => 0,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
 );
