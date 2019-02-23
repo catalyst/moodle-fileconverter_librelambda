@@ -96,7 +96,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_bucket_accessible');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
+        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'input');
 
         $this->assertFalse($result->success);
     }
@@ -116,7 +116,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
          // Reflection magic as we are directly testing a private method.
          $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_bucket_accessible');
          $method->setAccessible(true); // Allow accessing of private method.
-         $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
+         $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'input');
 
          $this->assertTrue($result->success);
     }
@@ -176,12 +176,15 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         $converter = new \fileconverter_librelambda\converter();
 
         $result = $converter::are_requirements_met();
+        $debugging = $this->getDebuggingMessages();
+        $this->resetDebugging();
 
+        $this->assertCount(1, $debugging);
         $this->assertFalse($result);
     }
 
     /**
-     * Test start document conversion class.
+     * Test start document conversion method.
      */
     public function test_start_document_conversion() {
         global $CFG;
@@ -213,6 +216,47 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         $converter->create_client($mock);
 
         $convert = $converter->start_document_conversion($conversion);
+
+        $this->assertEquals(conversion::STATUS_IN_PROGRESS, $convert->status);
+    }
+
+    /**
+     * Test poll document conversion method. For already complete status.
+     */
+    public function test_poll_document_conversion_already_complete() {
+        global $CFG;
+        $this->resetAfterTest();
+
+        // Create file to analyze.
+        $fs = get_file_storage();
+        $filerecord = array(
+                'contextid' => 252,
+                'component' => 'assignsubmission_file',
+                'filearea' => 'submission_files',
+                'itemid' => 8,
+                'filepath' => '/',
+                'filename' => 'testsubmission.odt');
+        $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
+        $file = $fs->create_file_from_pathname($filerecord, $fileurl);
+
+        $conversion = new conversion(0, (object) [
+                'sourcefileid' => $file->get_id(),
+                'targetformat' => 'pdf',
+        ]);
+        $conversion->create();
+
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+
+        $converter->start_document_conversion($conversion);
+        $conversion->set('status', conversion::STATUS_COMPLETE);
+        $conversion->update();
+
+        $convert = $converter->poll_conversion_status($conversion);
 
         $this->assertEquals(conversion::STATUS_IN_PROGRESS, $convert->status);
     }

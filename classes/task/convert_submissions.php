@@ -18,7 +18,7 @@
  * A scheduled task.
  *
  * @package    fileconverter_librelambda
- * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
+ * @copyright  2019 Matt Porritt <mattp@catalyst-au.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace fileconverter_librelambda\task;
@@ -27,7 +27,7 @@ use core\task\scheduled_task;
 
 /**
  * Simple task to convert submissions to pdf in the background.
- * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
+ * @copyright   2019 Matt Porritt <mattp@catalyst-au.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class convert_submissions extends scheduled_task {
