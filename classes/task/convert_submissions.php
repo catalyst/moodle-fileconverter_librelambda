@@ -46,15 +46,24 @@ class convert_submissions extends scheduled_task {
      * Throw exceptions on errors (the job will be retried).
      */
     public function execute() {
-        global $CFG, $DB;
+        global $DB;
 
-        //$records = $DB->get_records('assignfeedback_editpdf_queue');
+        $params = array(
+            'converter' => '\fileconverter_librelambda\converter',
+            'status' => '1'
+        );
+        $pendingconversions = $DB->get_records('file_conversion', $params, 'sourcefileid DESC', 'sourcefileid, targetformat');
 
-        // get all records from select * from mdl_file_conversion where converter=\fileconverter_librelambda\converter and status = 1
-        // $conversions = conversion::get_conversions_for_file($file, $format);
-        // for each conversion that is a libre lambda conversion
-        // call librelambda poll_conversion_status
+        $fs = get_file_storage();
+        foreach ($pendingconversions as $pendingconversion) {
+            $file = $fs->get_file_by_id($pendingconversion->sourcefileid);
+            $conversions = \core_files\conversion::get_conversions_for_file($file, $pendingconversion->targetformat);
 
+            foreach ($conversions as $conversion) {
+                $converter = new \fileconverter_librelambda\converter();
+                $converter->poll_conversion_status($conversion);
+            }
+        }
     }
 
 }
