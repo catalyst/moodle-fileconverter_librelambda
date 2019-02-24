@@ -25,6 +25,8 @@ namespace fileconverter_librelambda\task;
 
 use core\task\scheduled_task;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Simple task to convert submissions to pdf in the background.
  * @copyright   2019 Matt Porritt <mattp@catalyst-au.net>
@@ -58,13 +60,15 @@ class convert_submissions extends scheduled_task {
         $fs = get_file_storage();
         foreach ($pendingconversions as $pendingconversion) {
 
-            mtrace('Processing conversions for file id: ' . $pendingconversion->sourcefileid);
             $file = $fs->get_file_by_id($pendingconversion->sourcefileid);
-            $conversions = \core_files\conversion::get_conversions_for_file($file, $pendingconversion->targetformat);
+            if ($file) {
+                mtrace('Processing conversions for file id: ' . $pendingconversion->sourcefileid);
+                $conversions = \core_files\conversion::get_conversions_for_file($file, $pendingconversion->targetformat);
 
-            foreach ($conversions as $conversion) {
-                $converter = new \fileconverter_librelambda\converter();
-                $converter->poll_conversion_status($conversion);
+                foreach ($conversions as $conversion) {
+                    $converter = new \fileconverter_librelambda\converter();
+                    $converter->poll_conversion_status($conversion);
+                }
             }
         }
     }

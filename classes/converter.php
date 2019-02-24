@@ -165,8 +165,8 @@ class converter implements \core_files\converter_interface {
      * There is no check connection in the AWS API.
      * We use list buckets instead and check the bucket is in the list.
      *
-     * @param string $bucket Name of buket to check.
      * @param \fileconverter_librelambda\converter $converter
+     * @param string $bucket Name of buket to check.
      * @return boolean true on success, false on failure.
      */
     private static function is_bucket_accessible(\fileconverter_librelambda\converter $converter, $bucket) {

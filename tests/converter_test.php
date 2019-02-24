@@ -305,9 +305,10 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
     }
 
     /**
+     * Test convesion schedlued tasks for inprogress conversions.
      *
      */
-    public function test_execute_conversion_task_progress(){
+    public function test_execute_conversion_task_progress() {
         global $CFG;
         $this->resetAfterTest();
 
@@ -353,9 +354,10 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
     }
 
     /**
+     * Test convesion schedlued tasks for failed conversions.
      *
      */
-    public function test_execute_conversion_task_failed(){
+    public function test_execute_conversion_task_failed() {
         global $CFG;
         $this->resetAfterTest();
 

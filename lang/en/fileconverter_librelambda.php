@@ -49,6 +49,7 @@ $string['settings:deletesuccess'] = 'Could delete object from the external objec
 $string['settings:deleteerror'] = 'Could not delete object from the external object storage. ';
 $string['settings:permissioncheckpassed'] = 'Permissions check passed.';
 $string['provision:bucketexists'] = 'Bucket exists';
+$string['preparesubmissionsforannotation'] = 'Check LibreLambda conversions.';
 $string['provision:creatings3'] = 'Creating resource S3 Bucket';
 $string['provision:bucketcreated'] = 'Created {$a->bucket} bucket, at location {$a->location}';
 $string['provision:inputbucket'] = 'Input Bucket: {$a}';
