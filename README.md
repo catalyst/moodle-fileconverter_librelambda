@@ -67,7 +67,6 @@ The Libre Lambda document converter must be enabled in Moodle before it can be u
 2. Navigate to the Manage document converter settings: *Site administration > Plugins > Document converters > Manage document converters*
 3. Click the enable *eye icon* in the table row that corresponds to: *Libre Lambda Document Converter*
 
-
 Before the converter can be used the required AWS infrastructure needs to be setup. This is covered in the next section.
 
 ## AWS Stack Setup
@@ -168,7 +167,6 @@ A full end to end test can be performed in Moodle. This section outlines this pr
 
 **Note:**  Cron must be configured in your Moodle instance for document conversion to operate. Information on setting up Cron on your Moodle instance can be found here: https://docs.moodle.org/36/en/Cron
 
-
 To setup in Moodle:
 
 1. Log into the Moodle UI as a site administrator.
@@ -197,6 +195,7 @@ TODO: this
 
 ### Cost Profiling
 TODO: this
+cost elements
 
 ### Compiling Libre Office
 TODO: this
@@ -213,13 +212,10 @@ TODO: this
 Moodle currently ships with two (2) file converter plugins
 
 ### Does my Moodle need to be in AWS?
-No, you’re Moodle instance doesn’t need to reside in AWS to use this plugin. As long as your Moodle can contact the AWS S3 endpoint via HTTPS you should be able to use this plugin. This includes development environment.
+No, you’re Moodle instance doesn’t need to reside in AWS to use this plugin. As long as your Moodle can contact the AWS S3 endpoint via HTTPS you should be able to use this plugin. This includes development environments.
 
-Ease of use and scalability 
-
-
-## Inspiration 
-This plugin was inspired by and based on the initial work done by []() to compile and run Libre Office within an AWS Lambda function.
+## Inspiration
+This plugin was inspired by and based on the initial work done by [Vlad Holubiev](https://hackernoon.com/how-to-run-libreoffice-in-aws-lambda-for-dirty-cheap-pdfs-at-scale-b2c6b3d069b4) to compile and run Libre Office within an AWS Lambda function.
 
 ## License ##
 
