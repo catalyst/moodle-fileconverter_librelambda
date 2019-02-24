@@ -258,7 +258,145 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
 
         $convert = $converter->poll_conversion_status($conversion);
 
-        $this->assertEquals(conversion::STATUS_IN_PROGRESS, $convert->status);
+        $this->assertEquals(conversion::STATUS_COMPLETE, $conversion->get('status'));
     }
 
+
+    /**
+     * Test poll document conversion method. For already complete status.
+     */
+    public function test_poll_document_conversion_already_progress() {
+        global $CFG;
+        $this->resetAfterTest();
+
+        // Create file to analyze.
+        $fs = get_file_storage();
+        $filerecord = array(
+            'contextid' => 252,
+            'component' => 'assignsubmission_file',
+            'filearea' => 'submission_files',
+            'itemid' => 8,
+            'filepath' => '/',
+            'filename' => 'testsubmission.odt');
+        $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
+        $file = $fs->create_file_from_pathname($filerecord, $fileurl);
+
+        $conversion = new conversion(0, (object) [
+            'sourcefileid' => $file->get_id(),
+            'targetformat' => 'pdf',
+        ]);
+        $conversion->create();
+
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd, array('code' => 'NoSuchKey'));
+        });
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+
+        $converter->start_document_conversion($conversion);
+
+        $convert = $converter->poll_conversion_status($conversion);
+
+        $this->assertEquals(conversion::STATUS_IN_PROGRESS, $conversion->get('status'));
+    }
+
+    /**
+     *
+     */
+    public function test_execute_conversion_task_progress(){
+        global $CFG;
+        $this->resetAfterTest();
+
+        // Create file to analyze.
+        $fs = get_file_storage();
+        $filerecord = array(
+            'contextid' => 252,
+            'component' => 'assignsubmission_file',
+            'filearea' => 'submission_files',
+            'itemid' => 8,
+            'filepath' => '/',
+            'filename' => 'testsubmission.odt');
+        $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
+        $file = $fs->create_file_from_pathname($filerecord, $fileurl);
+
+        $conversion = new conversion(0, (object) [
+            'sourcefileid' => $file->get_id(),
+            'targetformat' => 'pdf',
+            'converter' => '\fileconverter_librelambda\converter',
+        ]);
+        $conversion->create();
+
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd, array('code' => 'NoSuchKey'));
+        });
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+        $converter->start_document_conversion($conversion);
+
+        $this->expectOutputRegex("/Processing/"); // We expect trace output for this test.
+
+        $convertertask = new \fileconverter_librelambda\task\convert_submissions();
+        $convertertask->execute();
+
+        $convert = $converter->poll_conversion_status($conversion);
+
+        $this->assertEquals(conversion::STATUS_IN_PROGRESS, $conversion->get('status'));
+
+    }
+
+    /**
+     *
+     */
+    public function test_execute_conversion_task_failed(){
+        global $CFG;
+        $this->resetAfterTest();
+
+        // Create file to analyze.
+        $fs = get_file_storage();
+        $filerecord = array(
+            'contextid' => 252,
+            'component' => 'assignsubmission_file',
+            'filearea' => 'submission_files',
+            'itemid' => 8,
+            'filepath' => '/',
+            'filename' => 'testsubmission.odt');
+        $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
+        $file = $fs->create_file_from_pathname($filerecord, $fileurl);
+
+        $conversion = new conversion(0, (object) [
+            'sourcefileid' => $file->get_id(),
+            'targetformat' => 'pdf',
+            'converter' => '\fileconverter_librelambda\converter',
+        ]);
+        $conversion->create();
+
+        // Set up the AWS mock.
+        $mock = new MockHandler();
+        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd, array('code' => 'FAIL'));
+        });
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+        $converter->start_document_conversion($conversion);
+
+        $this->expectOutputRegex("/Processing/"); // We expect trace output for this test.
+
+        $convertertask = new \fileconverter_librelambda\task\convert_submissions();
+        $convertertask->execute();
+
+        $convert = $converter->poll_conversion_status($conversion);
+
+        $this->assertEquals(conversion::STATUS_FAILED, $conversion->get('status'));
+
+    }
 }

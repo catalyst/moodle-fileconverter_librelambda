@@ -47,6 +47,7 @@ class convert_submissions extends scheduled_task {
      */
     public function execute() {
         global $DB;
+        mtrace('Processing pending LibreLambda document conversions');
 
         $params = array(
             'converter' => '\fileconverter_librelambda\converter',
@@ -56,6 +57,8 @@ class convert_submissions extends scheduled_task {
 
         $fs = get_file_storage();
         foreach ($pendingconversions as $pendingconversion) {
+
+            mtrace('Processing conversions for file id: ' . $pendingconversion->sourcefileid);
             $file = $fs->get_file_by_id($pendingconversion->sourcefileid);
             $conversions = \core_files\conversion::get_conversions_for_file($file, $pendingconversion->targetformat);
 

@@ -354,8 +354,9 @@ class converter implements \core_files\converter_interface {
      */
     public function poll_conversion_status(conversion $conversion) {
 
-        // If conversion is complete return early.
-        if ($conversion->get('status') == conversion::STATUS_COMPLETE) {
+        // If conversion is complete or failed return early.
+        if ($conversion->get('status') == conversion::STATUS_COMPLETE
+            || $conversion->get('status') == conversion::STATUS_FAILED) {
             return $this;
         }
 
