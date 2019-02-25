@@ -188,20 +188,43 @@ To setup in Moodle:
 The following sections provide an overview of some additional topics for this plugin and it's associated AWS architecture.
 
 ### Conversion Architecture
-TODO: this
+The below image shows the high level architecture the plugin provisioning process sets up in AWS.
+
+![Conversion Architecture](/pix/LibreLambda.png?raw=true)
+
+The conversion process and AWS achitecture is relatively simple:
+
+* Moodle uploads the document to be converted into the `input` bucket.
+* An event is triggered when the document is successfully uploaded, the Lambda function is then invoked by this event and begins the conversion process.
+*
 
 ### Privacy and Data Control
-TODO: this
+Student data privacy is very important, especially when sending data out of Moodle and supplying it to third party services. This plugin was designed with privacy and security in mind.  Some of the privacy and security features are outlined below.
+
+* No copies of documents are stored in AWS after document conversion.
+** All data sent to the AWS is transient it exists only for the length of the conversion. Files uploaded to the input bucket are deleted when they are processed by the Lambda function.  All temp files created by the conversion are explicitly deleted as part of the convsersion cleanup. The converted file in the output bucket is deleted by Moodle when the converted file is retreived by Moodle.
+* All document data sent and retrieved from AWS is encrypted in transit.
+** SSL/TLS is used between Moodle and the AWS infrastrucutre for both uploading and downloading documents
+* Enforced access control
+** Access control is enforced in several places. The credentials that the plugin uses to contact AWS only have access to the input and output buckets for the provisioned conversion architecture. The credendtials give them no other access to any other AWS services or infrastructure.
+** The access granted to the Lambda function is limited to downloading and uploading documents between the input and output buckets. The Lambda function has no other access to any other AWS services or infrastructure.
+* We control the entire workflow (and conversion process is known).
+** Even though we are sending data to a third party (AWS). What happens to the data is completely controlled and known by us. The workflow is known as is the steps taken by the Lambda function. We have access to all the code that is used for the entire process and we can track the data at each step.
+* Document names are obfuscated and no other student data is transmitted out of Moodle.
+** The document to be converted is uploaded to AWS with the original document name replace with a cryptographic hash. That way even individuals with access to the buckets and conversion logs, can find any student details from the document filename. NOTE: users with access to the input and output documents will be able to read the documents.
+** No student data is included as part of the conversion process.  Some additional metadata is passed along with the document to convert, but this is not realted to a Moodle user.
 
 ### Cost Profiling
 TODO: this
 cost elements
+only costs when running
 
 ### Compiling Libre Office
 TODO: this
 
 ### Lambda Function
 TODO: this
+scaling
 
 ## FAQs
 
