@@ -47,7 +47,7 @@ PDF Annotation needs to be enabled at site level, for your Moodle installation. 
 
 1. Log into the Moodle UI as a site administrator
 2. Navigate to the server system path settings: *Site administration > Plugins > Activity modules > Assignment > Feedback plugins > Annotate PDF*
-3. Make sure the *Enabled by default* checkbox is checked
+3. Make sure the *Enabled by default* check box is checked
 4. Click *Save changes*
 
 ### Set Ghostscript Executable
@@ -188,31 +188,69 @@ To setup in Moodle:
 The following sections provide an overview of some additional topics for this plugin and it's associated AWS architecture.
 
 ### Conversion Architecture
-TODO: this
+The below image shows the high level architecture the plugin provisioning process sets up in AWS.
+
+![Conversion Architecture](/pix/LibreLambda.png?raw=true)
+
+The conversion process and AWS architecture is relatively simple:
+
+* Moodle uploads the document to be converted into the input bucket.
+* An event is triggered when the document is successfully uploaded, the Lambda function is then invoked by this event and begins the conversion process.
+* The original document is fetched from the bucket by the Lambda function.
+* The Lambda function uses LibreOffice to convert the document. LibreOffice is never constantly running it is started by the Lambda function and stops automatically when the conversion in complete
+* The converted document is uploaded by the Lmabda function to the output bucket
+* The temporary copies of the document and the original in the input bucket are deleted
+* Moodle retrieves the converted document from the output bucket.
+
+There are no traditional *servers* or compute resources involved in the conversion process. Storage for the uploaded and converted documents is provide by S3 (an AWS object storage service). The conversion processing is handled by Lambda (an AWS Function on Demand runtime service). This means compute resources are only used when they are invoked by a document upload and they are stopped when the document conversion is finished.
+
+This architecture is also very scalable and can handle a high degree of parallelism. Every time a document is uploaded to the input bucket a new Lambda function is invoked (upto an initial limit of 1,000).  The lambda functions are fully self contained and have everything they need to convert a document. This means newly uploaded documents don't need to wait for previous documents to be converted before their own conversion starts.
 
 ### Privacy and Data Control
-TODO: this
+Student data privacy is very important, especially when sending data out of Moodle and supplying it to third party services. This plugin was designed with privacy and security in mind.  Some of the privacy and security features are outlined below.
+
+* No copies of documents are stored in AWS after document conversion.
+  * All data sent to the AWS is transient it exists only for the length of the conversion. Files uploaded to the input bucket are deleted when they are processed by the Lambda function.  All temporary files created by the conversion are explicitly deleted as part of the conversion cleanup. The converted file in the output bucket is deleted by Moodle when the converted file is retrieved by Moodle.
+* All document data sent and retrieved from AWS is encrypted in transit.
+  * SSL/TLS is used between Moodle and the AWS infrastructure for both uploading and downloading documents
+* Enforced access control
+  * Access control is enforced in several places. The credentials that the plugin uses to contact AWS only have access to the input and output buckets for the provisioned conversion architecture. The credentials give them no other access to any other AWS services or infrastructure.
+  * The access granted to the Lambda function is limited to downloading and uploading documents between the input and output buckets. The Lambda function has no other access to any other AWS services or infrastructure.
+* We control the entire workflow (and conversion process is known).
+  * Even though we are sending data to a third party (AWS). What happens to the data is completely controlled and known by us. The workflow is known as is the steps taken by the Lambda function. We have access to all the code that is used for the entire process and we can track the data at each step.
+* Document names are obfuscated and no other student data is transmitted out of Moodle.
+  * The document to be converted is uploaded to AWS with the original document name replace with a cryptographic hash. That way even individuals with access to the buckets and conversion logs, can find any student details from the document filename. NOTE: users with access to the input and output documents will be able to read the documents.
+  * No student data is included as part of the conversion process.  Some additional metadata is passed along with the document to convert, but this is not related to a Moodle user.
 
 ### Cost Profiling
 TODO: this
+
 cost elements
+
+only costs when running
 
 ### Compiling Libre Office
 TODO: this
 
 ### Lambda Function
 TODO: this
+scaling
 
 ## FAQs
 
-### Why AWS?
-TODO: this
-
 ### Why make this plugin?
-Moodle currently ships with two (2) file converter plugins
+Moodle currently ships with two (2) file converter plugins. 
 
 ### Does my Moodle need to be in AWS?
 No, you’re Moodle instance doesn’t need to reside in AWS to use this plugin. As long as your Moodle can contact the AWS S3 endpoint via HTTPS you should be able to use this plugin. This includes development environments.
+
+### How long does document conversion take?
+Typical conversion times are between 4 - 80 seconds. This is how long the conversion takes in AWS, the time it takes for the converted document to be available in Moodle depends on the timing of cron runs.
+
+Conversion time is variable and depends on the source document. Also if you haven't done a conversion for a while there may be a "warm up" time for the AWS architecture.
+
+### Why AWS?
+TODO: this
 
 ## Inspiration
 This plugin was inspired by and based on the initial work done by [Vlad Holubiev](https://hackernoon.com/how-to-run-libreoffice-in-aws-lambda-for-dirty-cheap-pdfs-at-scale-b2c6b3d069b4) to compile and run Libre Office within an AWS Lambda function.
