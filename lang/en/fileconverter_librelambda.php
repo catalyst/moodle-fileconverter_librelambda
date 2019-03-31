@@ -25,12 +25,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Libre Lambda Document Converter';
+$string['pluginname'] = 'LibreLambda document converter';
 $string['privacy:metadata:fileconverter_librelambda:externalpurpose'] = 'This information is sent to AWS API in order the file to be converted to an alternative format. The file is temporarily kept in an AWS S3 bucket and gets deleted after the conversion is done.';
 $string['privacy:metadata:fileconverter_librelambda:filecontent'] = 'The content of the file.';
 $string['privacy:metadata:fileconverter_librelambda:filemimetype'] = 'The MIME type of the file.';
 $string['privacy:metadata:fileconverter_librelambda:params'] = 'The query parameters passed to AWS API.';
-$string['settings:aws:header'] = 'AWS Settings';
+$string['settings:aws:header'] = 'AWS settings';
 $string['settings:aws:key'] = 'Key';
 $string['settings:aws:key_help'] = 'Amazon API key credential.';
 $string['settings:aws:secret'] = 'Secret';
@@ -52,17 +52,17 @@ $string['provision:bucketexists'] = 'Bucket exists';
 $string['preparesubmissionsforannotation'] = 'Check LibreLambda conversions.';
 $string['provision:creatings3'] = 'Creating resource S3 Bucket';
 $string['provision:bucketcreated'] = 'Created {$a->bucket} bucket, at location {$a->location}';
-$string['provision:inputbucket'] = 'Input Bucket: {$a}';
+$string['provision:inputbucket'] = 'Input bucket: {$a}';
 $string['provision:lambdaarchiveuploaded'] = 'Lambda function archive uploaded sucessfully to: {$a}';
 $string['provision:lambdalayeruploaded'] = 'Lambda layer uploaded sucessfully to: {$a}';
 $string['provision:librearchiveuploaded'] = 'Libreoffice archive uploaded sucessfully to: {$a}';
-$string['provision:outputbucket'] = 'Output Bucket: {$a}';
+$string['provision:outputbucket'] = 'Output bucket: {$a}';
 $string['provision:setconfig'] = 'Setting plugin configuration in Moodle, from returned settings.';
 $string['provision:stack'] = 'Provisioning the Lambda function and stack resources';
 $string['provision:s3useraccesskey'] = 'S3 user access key: {$a}';
 $string['provision:s3usersecretkey'] = 'S3 user secret key: {$a}';
 $string['provision:stackcreated'] = 'Cloudformation stack created. Stack ID is: {$a}';
-$string['provision:uploadlibrearchive'] = 'Uploading Libre Office archive to resource S3 bucket';
+$string['provision:uploadlibrearchive'] = 'Uploading LibreOffice archive to resource S3 bucket';
 $string['provision:uploadlambdaarchive'] = 'Uploading Lambda archive to resource S3 bucket';
 $string['provision:uploadlambdalayer'] = 'Uploading Lambda layer to resource S3 bucket';
 $string['test:bucketnotexists'] = 'The {$a} bucket does not exist.';
