@@ -8,7 +8,7 @@
         <licenseversion>2.0</licenseversion>
     </library>
     <library>
-        <location>Lambda</location>
+        <location>lambda</location>
         <name>Lambda conversion function</name>
         <version>Version 1</version>
         <license>GPL</license>

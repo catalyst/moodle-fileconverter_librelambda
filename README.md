@@ -223,18 +223,45 @@ Student data privacy is very important, especially when sending data out of Mood
   * No student data is included as part of the conversion process.  Some additional metadata is passed along with the document to convert, but this is not related to a Moodle user.
 
 ### Cost Profiling
-TODO: this
+The following outlines the costs involved using this plugin to convert 100,000 documents to PDF.
+All costs are in AUD.
 
-cost elements
+Costs for cloud based services have a lot of individual elements and can be confusing. Therefore it is often
+better to use a concrete example. Below is the cost breakdown for the conversion test undertaken of 100,000
+source documents. The 100,000 documents require 38GB of storage space.
 
-only costs when running
+|                            |             |            |            |                              |
+|----------------------------|-------------|------------|------------|------------------------------|
+| Documents to convert       | 100,000     |            |            |                              |
+| Avg File Size (MB)         | 0.38        |            |            |                              |
+|                            |             |            |            |                              |
+| Operation                  | Unit        | Unit cost  | Total      | Notes                        |
+| Put to S3 Input bucket     | Per Request | 0.0000055  | $0.55      |                              |
+| S3 Input Bucket Storage    | Per GB      | 0.025      | $0.95      |                              |
+|                            |             |            |            |                              |
+| S3 Input to Lambda         | Per Request | 0.00000044 | $0.04      |                              |
+| Lambda Invocations         | Per Request | 0          | $0.00      | First million per month free |
+| Lambda Executions          | GB/s        | 0          | $0.00      | 400,00 GB-Seconds month free |
+| Lambda to S3 Output        | Per Request | 0.0000055  | $0.55      |                              |
+|                            |             |            |            |                              |
+| S3 Output Bucket Storage   | Per GB      | 0.025      | $0.95      |                              |
+| Get from S3 Output Bucket  | Per Request | 0.00000044 | $0.04      |                              |
+| First GB transfer out      | Per GB      | 0          | $0.00      |                              |
+| 1GB - 9.999TB Transfer out | Per GB      | 0.114      | $4.22      |                              |
+|                            |             |            |            |                              |
+|                            |             | Total      | $7.31      |                              |
+|                            |             | Per doc    | $0.0000731 |                              |
+
+Cost profiling resources:
+
+* [Amazon S3 Pricing](https://aws.amazon.com/s3/pricing/?nc=sn&loc=4)
+* [AWS Lambda Pricing](https://aws.amazon.com/lambda/pricing/)
 
 ### Compiling Libre Office
 TODO: this
 
 ### Lambda Function
 TODO: this
-scaling
 
 ## FAQs
 
