@@ -212,7 +212,7 @@ class tester {
             'Key' => $fileinfo['filename'], // Required.
         );
 
-        $timeout = time() + (60 * 5); // Five minute timeout.
+        $timeout = time() + (60 * 10); // Ten minute timeout.
         $getobject = false;
 
         // Check for file until file available,
@@ -232,7 +232,7 @@ class tester {
                 }
             }
 
-            sleep(10);  // Sleep for a bit before rechecking.
+            sleep(5);  // Sleep for a bit before rechecking.
         }
 
         // Check mime type of downloaded object.
