@@ -66,7 +66,7 @@ cd libreoffice
     --without-system-dicts
 
 # Disable flaky unit tests failing on macos (and for some reason on Amazon Linux as well).
-sudo sed -i 's/\#if\ \!defined\ MACOSX\ \&\& \!\defined\ \_WIN32/\#if\ defined\ MACOSX\ \&\&\ \!defined\ _WIN32/g' libreoffice/vcl/qa/cppunit/pdfexport/pdfexport.cxx
+sudo sed -i 's/\#if\ \!defined\ MACOSX\ \&\& \!\defined\ \_WIN32/\#if\ defined\ MACOSX\ \&\&\ \!defined\ _WIN32/g' vcl/qa/cppunit/pdfexport/pdfexport.cxx
 
 # Compile it! This will take 0-2 hours to compile, depends on the AWS instance size.
 make
