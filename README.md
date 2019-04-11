@@ -257,7 +257,61 @@ Cost profiling resources:
 * [Amazon S3 Pricing](https://aws.amazon.com/s3/pricing/?nc=sn&loc=4)
 * [AWS Lambda Pricing](https://aws.amazon.com/lambda/pricing/)
 
-### Compiling Libre Office
+### Libre Office Archive and Compliation
+This plugin includes precompiled LibreOffice archives as a compressed archive in the */libre* folder of this repository. The archive is uploaded to AWS as part of the provisioning process. Lambda uses the uncompressed binaries to do the actual conversion of the uploaded documents to PDF.
+
+The precompiled binary archive for LibreOffice is provided as a convienence to make setting everything up easier. However, you can obtain the LibreOffice source code and compile it yourself. See the section: *Compiling Libre Office* for instructions on how to do this.
+
+#### Compiling Libre Office
+This section will outline how to compile LibreOffice for yourself to be used by AWS Lambda to convert files.
+
+There are two main reasons why we need to custom compile LibreOffice to work with AWS Lambda. The first is we need to compile LibreOffice so it works in the same runtime environment as Lambda. The second is that Lambda has very limited disk space (512MB) which we can use to store and execute binaries. So we need to create a very minimal version of LibreOffice to stay under the disk space limits.
+
+Some basic knowledge of launching AWS EC2 instances as well as command line Linux administration is required to compile your own LibreOffice instance.
+
+The process to create your own compiled LibreOffice binary archive is:
+* Launch an AWS EC2 instance using the same base environment as used by AWS Lambda
+* Configure the EC2 instance with all the prerequistes required to compile LibreOffice
+* Get the LibreOffice code from the LibreOffice project
+* Compile LibreOffice binaries
+* Create the LibreOffice archive and download it from the EC2
+
+**NOTE:** There will be EC2 costs associated from AWS with compiling your own LibreOffice.
+
+##### Launch an AWS EC2 instance using the same base environment as used by AWS Lambda
+
+1. Sign into the AWS Console as a user with enough permissions to launch an EC2 instance.
+2. Get the current AWS AMI ID that Lambda is using, this is always listed here: [Lambda Execution Environment and Available Libraries](https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html)
+3. On the *Lambda Execution Environment and Available Libraries* page click the link for the AMI ID, This will show the AMI in the AWS console and allow you to launch the AMI as an ECS instance.
+4. Launch the AMI as an EC2. A *c5d.4xlarge* is recommended. As part of the launch configuration make sure you either generate or use an existing SSH keypair as you will need to SSH into the instance.
+
+After the above steps are completed follow the instructions in the next section, to configure the instance and install the required prerequisites.
+
+##### Configure the EC2 instance with all the prerequistes required to compile LibreOffice
+
+1. SSH into the launched EC2 instance.
+2. Use the following command to install git onto the instance: `sudo yum update -y & sudo yum install git -y`
+3. Now that git is installed clone this repository onto the instance: `git clone https://github.com/mattporritt/moodle-fileconverter_librelambda.git`
+4. Run the following script from the cloned repository. This will install the all the prerequisites to the EC2 instance. The command to run is: `sudo ./moodle-fileconverter_librelambda/libre/cli/prereq.sh`. You are free to examine this script in this repository to see what it does.
+
+After the above steps are completed follow the instructions in the next section, to get the source code for LibreOffice.
+
+##### Get the LibreOffice code from the LibreOffice project
+
+1. Run the following script from the cloned repository. This will download the LibreOffice source code. The command to run is: `./moodle-fileconverter_librelambda/libre/cli/getsource.sh`. You are free to examine this script in this repository to see what it does.
+
+After the above steps are completed follow the instructions in the next section, to compile LibreOffice.
+
+##### Compile LibreOffice binaries
+
+1. Run the following script from the cloned repository. This will compile the LibreOffice source code and cleanup some non required files. The command to run is: `./moodle-fileconverter_librelambda/libre/cli/compile.sh`. You are free to examine this script in this repository to see what it does.
+2. Once the binaries are compiled you can run the following command to test the conversion: 
+
+**NOTE:** Compiling LibreOffice will take time. You can increase the compilation speed by choosing an EC2 instance size with more CPU resources. (This will cost more money).
+
+After the above steps are completed follow the instructions in the next section, to create and download the LibreOffice archive.
+
+##### Create the LibreOffice archive and download it from the EC2
 TODO: this
 
 ### Lambda Function
@@ -266,7 +320,17 @@ TODO: this
 ## FAQs
 
 ### Why make this plugin?
-Moodle currently ships with two (2) file converter plugins. 
+Moodle currently ships with two (2) file converter plugins: Unoconv and Google Drive Converter. These plugins use external services to convert submitted files to PDF. In our experience using these plugins for production Moodle instances, both have issues. These issues are especially bad in sites that convert a lot of files.  The issues are mainly related to performance but there are privacy concerns as well.  In order to address these issues we decided to make this plugin.
+
+The following is the broad criteria we used when making this plugin and this plugin aims to address all of these issues:
+
+* **Privacy** - We want to know where our data is, how it is used and who it is shared with at all points of the conversion journey. Unoconv is good here as you’re in complete control of the process and libreoffice itself is an open project. Google drive converter on the other hand is a black box.
+
+* **Cost** -  The cost per document conversion, including costs for solution maintenance need to be as low as possible. Google converter and Unoconv are not too bad here. Unoconv loses out a bit when you include the costs for managing the infrastructure.
+
+* **Scalability and Performance** - Whatever we chose we needed it to work at scale, that is reliably convert a large number of documents quickly. Both Unoconv and the Google converter fall down here. Google can get slow during peak periods. And Unoconv infrastructure is hard to manage at scale.
+
+* **Ease of Management and Set Up** - Finally the solution needs to be easy to set up, for both production and development environments and ongoing management should be minimal.
 
 ### Does my Moodle need to be in AWS?
 No, you’re Moodle instance doesn’t need to reside in AWS to use this plugin. As long as your Moodle can contact the AWS S3 endpoint via HTTPS you should be able to use this plugin. This includes development environments.
