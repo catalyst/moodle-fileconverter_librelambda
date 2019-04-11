@@ -55,7 +55,7 @@ class convert_submissions extends scheduled_task {
             'converter' => '\fileconverter_librelambda\converter',
             'status' => '1'
         );
-        $pendingconversions = $DB->get_records('file_conversion', $params, 'sourcefileid DESC', 'sourcefileid, targetformat');
+        $pendingconversions = $DB->get_recordset('file_conversion', $params, 'sourcefileid DESC', 'sourcefileid, targetformat');
 
         $fs = get_file_storage();
         foreach ($pendingconversions as $pendingconversion) {
@@ -71,6 +71,8 @@ class convert_submissions extends scheduled_task {
                 }
             }
         }
+
+        $pendingconversions->close();
     }
 
 }
