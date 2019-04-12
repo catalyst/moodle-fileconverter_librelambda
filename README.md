@@ -290,7 +290,7 @@ After the above steps are completed follow the instructions in the next section,
 ##### Configure the EC2 instance with all the prerequistes required to compile LibreOffice
 
 1. SSH into the launched EC2 instance.
-2. Use the following command to install git onto the instance: `sudo yum update -y & sudo yum install git -y`
+2. Use the following command to install git onto the instance: `sudo yum update -y & sudo yum install -y git`
 3. Now that git is installed clone this repository onto the instance: `git clone https://github.com/mattporritt/moodle-fileconverter_librelambda.git`
 4. Run the following script from the cloned repository. This will install the all the prerequisites to the EC2 instance. The command to run is: `sudo ./moodle-fileconverter_librelambda/libre/cli/prereq.sh`. You are free to examine this script in this repository to see what it does.
 
@@ -305,14 +305,25 @@ After the above steps are completed follow the instructions in the next section,
 ##### Compile LibreOffice binaries
 
 1. Run the following script from the cloned repository. This will compile the LibreOffice source code and cleanup some non required files. The command to run is: `./moodle-fileconverter_librelambda/libre/cli/compile.sh`. You are free to examine this script in this repository to see what it does.
-2. Once the binaries are compiled you can run the following command to test the conversion: 
+2. Once the binaries are compiled you can run the following commands to test the conversion:
+
+```console
+echo "hello world" > a.txt
+.libreoffice/instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard \
+--nolockcheck --nologo --norestore --convert-to pdf --outdir $(pwd) a.txt
+```
 
 **NOTE:** Compiling LibreOffice will take time. You can increase the compilation speed by choosing an EC2 instance size with more CPU resources. (This will cost more money).
 
 After the above steps are completed follow the instructions in the next section, to create and download the LibreOffice archive.
 
 ##### Create the LibreOffice archive and download it from the EC2
-TODO: this
+1. Change to the LibreOffice directory: `cd libreoffice`
+2. Create the archive: `XZ_OPT=-e9 tar cJf lo.tar.xz instdir/`
+3. Download the archive to your local machine, using your favorite method.
+
+Once you have the archive you can replace the existing archive in this repository at `/libre/lo.tar.xz`.
+Then when you run the provisioning script to setup the environment it will use the newly created LibreLambda archive for Lmabda.
 
 ### Lambda Function
 TODO: this
