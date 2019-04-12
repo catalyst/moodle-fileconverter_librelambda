@@ -309,7 +309,7 @@ After the above steps are completed follow the instructions in the next section,
 
 ```console
 echo "hello world" > a.txt
-.libreoffice/instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard \
+./libreoffice/instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard \
 --nolockcheck --nologo --norestore --convert-to pdf --outdir $(pwd) a.txt
 ```
 
@@ -319,7 +319,7 @@ After the above steps are completed follow the instructions in the next section,
 
 ##### Create the LibreOffice archive and download it from the EC2
 1. Change to the LibreOffice directory: `cd libreoffice`
-2. Create the archive: `XZ_OPT=-e9 tar cJf lo.tar.xz instdir/`
+2. Create the archive: `XZ_OPT=-e9 tar cJf ../lo.tar.xz instdir/`
 3. Download the archive to your local machine, using your favorite method.
 
 Once you have the archive you can replace the existing archive in this repository at `/libre/lo.tar.xz`.
