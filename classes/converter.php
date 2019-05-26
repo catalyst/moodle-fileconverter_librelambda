@@ -51,6 +51,10 @@ class converter implements \core_files\converter_interface {
         'html' => 'text/html',
         'odt' => 'application/vnd.oasis.opendocument.text',
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'txt' => 'text/plain',
+        'gif' => 'image/gif',
     ];
 
     /** @var array $export List of supported export file formats */
@@ -412,6 +416,6 @@ class converter implements \core_files\converter_interface {
      * @return  string
      */
     public function get_supported_conversions() {
-        return implode(', ', ['doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt', 'ods', 'pdf']);
+        return implode(', ', ['doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt', 'ods', 'txt', 'png', 'jpg', 'gif', 'pdf']);
     }
 }
