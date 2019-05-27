@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mattporritt/moodle-fileconverter_librelambda.svg?branch=master)](https://travis-ci.org/mattporritt/moodle-fileconverter_librelambda)
+[![Build Status](https://travis-ci.org/catalyst/moodle-fileconverter_librelambda.svg?branch=master)](https://travis-ci.org/catalyst/moodle-fileconverter_librelambda)
 
 # Libre Lambda Document Converter #
 
@@ -291,7 +291,7 @@ After the above steps are completed follow the instructions in the next section,
 
 1. SSH into the launched EC2 instance.
 2. Use the following command to install git onto the instance: `sudo yum update -y & sudo yum install -y git`
-3. Now that git is installed clone this repository onto the instance: `git clone https://github.com/mattporritt/moodle-fileconverter_librelambda.git`
+3. Now that git is installed clone this repository onto the instance: `git clone https://github.com/catalyst/moodle-fileconverter_librelambda.git`
 4. Run the following script from the cloned repository. This will install the all the prerequisites to the EC2 instance. The command to run is: `sudo ./moodle-fileconverter_librelambda/libre/cli/prereq.sh`. You are free to examine this script in this repository to see what it does.
 
 After the above steps are completed follow the instructions in the next section, to get the source code for LibreOffice.
