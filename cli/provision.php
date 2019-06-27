@@ -93,7 +93,7 @@ $provisioner = new \fileconverter_librelambda\provision(
 cli_heading(get_string('provision:creatings3', 'fileconverter_librelambda'));
 
 $resourcebucketresposnse = $provisioner->create_bucket('resource');
-if ($resourcebucketresposnse->code != 0 ) {
+if ($resourcebucketresposnse->code !== 0 ) {
     $errormsg = $resourcebucketresposnse->code . ': ' . $resourcebucketresposnse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
@@ -110,7 +110,7 @@ cli_heading(get_string('provision:uploadlibrearchive', 'fileconverter_librelambd
 cli_heading(get_string('provision:uploadlambdaarchive', 'fileconverter_librelambda'));
 $lambdapath = $CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip';
 $lambdauploadresponse = $provisioner->upload_file($lambdapath, $resourcebucketresposnse->bucketname);
-if ($lambdauploadresponse->code != 0 ) {
+if ($lambdauploadresponse->code !== 0 ) {
     $errormsg = $lambdauploadresponse->code . ': ' . $lambdauploadresponse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
@@ -133,7 +133,7 @@ $zip->close();
 
 // Next upload the Zip to the resource bucket.
 $layeruploadresponse = $provisioner->upload_file($tmpfname, $resourcebucketresposnse->bucketname);
-if ($layeruploadresponse->code != 0 ) {
+if ($layeruploadresponse->code !== 0 ) {
     $errormsg = $layeruploadresponse->code . ': ' . $layeruploadresponse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
@@ -158,7 +158,7 @@ $params = array(
 );
 
 $createstackresponse = $provisioner->create_stack($params);
-if ($createstackresponse->code != 0 ) {
+if ($createstackresponse->code !== 0 ) {
     $errormsg = $createstackresponse->code . ': ' . $createstackresponse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
