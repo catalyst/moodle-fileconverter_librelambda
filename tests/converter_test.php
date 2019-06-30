@@ -190,13 +190,18 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         global $CFG;
         $this->resetAfterTest();
 
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
+        $instance = $generator->create_instance(array('course' => $course->id));
+        $context = context_module::instance($instance->cmid);
+
         // Create file to analyze.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => 252,
+            'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
-            'itemid' => 8,
+            'itemid' => $instance->cmid,
             'filepath' => '/',
             'filename' => 'testsubmission.odt');
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
@@ -227,15 +232,20 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         global $CFG;
         $this->resetAfterTest();
 
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
+        $instance = $generator->create_instance(array('course' => $course->id));
+        $context = context_module::instance($instance->cmid);
+
         // Create file to analyze.
         $fs = get_file_storage();
         $filerecord = array(
-                'contextid' => 252,
-                'component' => 'assignsubmission_file',
-                'filearea' => 'submission_files',
-                'itemid' => 8,
-                'filepath' => '/',
-                'filename' => 'testsubmission.odt');
+            'contextid' => $context->id,
+            'component' => 'assignsubmission_file',
+            'filearea' => 'submission_files',
+            'itemid' => $instance->cmid,
+            'filepath' => '/',
+            'filename' => 'testsubmission.odt');
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -269,13 +279,18 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         global $CFG;
         $this->resetAfterTest();
 
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
+        $instance = $generator->create_instance(array('course' => $course->id));
+        $context = context_module::instance($instance->cmid);
+
         // Create file to analyze.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => 252,
+            'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
-            'itemid' => 8,
+            'itemid' => $instance->cmid,
             'filepath' => '/',
             'filename' => 'testsubmission.odt');
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
@@ -312,13 +327,18 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         global $CFG;
         $this->resetAfterTest();
 
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
+        $instance = $generator->create_instance(array('course' => $course->id));
+        $context = context_module::instance($instance->cmid);
+
         // Create file to analyze.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => 252,
+            'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
-            'itemid' => 8,
+            'itemid' => $instance->cmid,
             'filepath' => '/',
             'filename' => 'testsubmission.odt');
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
@@ -361,13 +381,18 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         global $CFG;
         $this->resetAfterTest();
 
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
+        $instance = $generator->create_instance(array('course' => $course->id));
+        $context = context_module::instance($instance->cmid);
+
         // Create file to analyze.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => 252,
+            'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
-            'itemid' => 8,
+            'itemid' => $instance->cmid,
             'filepath' => '/',
             'filename' => 'testsubmission.odt');
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';

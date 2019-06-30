@@ -347,6 +347,23 @@ class converter implements \core_files\converter_interface {
         }
         $conversion->update();
 
+        // Trigger event.
+        list($context, $course, $cm) = get_context_info_array($file->get_contextid());
+        $eventinfo = array(
+            'context' => $context,
+            'courseid' => $course->id,
+            'other' => array(
+                'sourcefileid' => $conversion->get('sourcefileid'),
+                'bucket' => $this->config->s3_input_bucket,
+                'key' => $file->get_pathnamehash(),
+                'targetformat' => $conversion->get('targetformat'),
+                'id' => $conversion->get('id'),
+                'sourcefileid' => $conversion->get('sourcefileid'),
+                'status' => $this->status
+            ));
+        $event = \fileconverter_librelambda\event\poll_conversion_status::create($eventinfo);
+        $event->trigger();
+
         return $this;
     }
 
@@ -392,6 +409,23 @@ class converter implements \core_files\converter_interface {
         }
         $conversion->update();
 
+        // Trigger event.
+        list($context, $course, $cm) = get_context_info_array($file->get_contextid());
+        $eventinfo = array(
+            'context' => $context,
+            'courseid' => $course->id,
+            'other' => array(
+                'sourcefileid' => $conversion->get('sourcefileid'),
+                'bucket' => $this->config->s3_output_bucket,
+                'key' => $file->get_pathnamehash(),
+                'targetformat' => $conversion->get('targetformat'),
+                'id' => $conversion->get('id'),
+                'sourcefileid' => $conversion->get('sourcefileid'),
+                'status' => $this->status
+            ));
+        $event = \fileconverter_librelambda\event\poll_conversion_status::create($eventinfo);
+        $event->trigger();
+
         return $this;
 
     }
@@ -416,6 +450,9 @@ class converter implements \core_files\converter_interface {
      * @return  string
      */
     public function get_supported_conversions() {
-        return implode(', ', ['doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt', 'ods', 'txt', 'png', 'jpg', 'gif', 'pdf']);
+        $conversions = array(
+            'doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt', 'ods', 'txt', 'png', 'jpg', 'gif', 'pdf'
+            );
+        return implode(', ', $conversions);
     }
 }

@@ -15,20 +15,37 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * The LibreLambda poll conversion status event.
  *
  * @package     fileconverter_librelambda
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace fileconverter_librelambda\event;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'fileconverter_librelambda';
-$plugin->release = '2019063000';
-$plugin->version = 2019063000;
-$plugin->requires = 2018051700;
-$plugin->maturity = MATURITY_STABLE;
-$plugin->dependencies = array(
-        'local_aws' => 2018061900
-);
+/**
+ * The LibreLambda poll conversion status event.
+ *
+ * @package     fileconverter_librelambda
+ * @copyright   2019 Matt Porritt <mattp@catalyst-au.net>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class poll_conversion_status extends \core\event\base {
+
+    protected function init() {
+        $this->data['crud'] = 'c';
+        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
+
+    }
+
+    public static function get_name() {
+        return get_string('event:poll_conversion_status', 'fileconverter_librelambda');
+    }
+
+    public function get_description() {
+        return get_string('event:poll_conversion_status', 'fileconverter_librelambda');
+    }
+}
