@@ -97,6 +97,7 @@ def convert_file(filepath, targetformat):
         "--nolockcheck",
         "--nologo",
         "--norestore",
+        "--writer",
         "--convert-to",
         targetformat,
         "--outdir",
