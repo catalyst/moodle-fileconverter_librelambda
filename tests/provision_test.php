@@ -196,5 +196,24 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
             $this->assertEquals('http://foobar.bah.joo.bar.s3.amazonaws.com/', $result->message);
     }
 
+    /**
+     * Test that bucketprefix is set as expected.
+     */
+    public function test_bucketprefix_is_set_correctly() {
+        global $CFG;
+
+        $keyid = 'AAAAAAAAAAAA';
+        $secret = 'aaaaaaaaaaaaaaaaaa';
+        $region = 'ap-southeast-2';
+
+        $bucketprefix = '';
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $this->assertEquals(md5($CFG->siteidentifier), $provisioner->get_bucket_prefix());
+
+        $bucketprefix = 'test_prefix';
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $this->assertEquals('test_prefix', $provisioner->get_bucket_prefix());
+    }
+
 
 }
