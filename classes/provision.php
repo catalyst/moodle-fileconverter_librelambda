@@ -97,7 +97,7 @@ class provision {
         $this->secret = $secret;
         $this->region = $region;
 
-        if ($this->bucketprefix == '') {
+        if ($bucketprefix == '') {
             $this->bucketprefix = md5($CFG->siteidentifier);
         } else {
             $this->bucketprefix = $bucketprefix;
