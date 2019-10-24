@@ -110,22 +110,22 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
             return new S3Exception('Mock exception', $cmd, array('code' => 403));
         });
 
-            $keyid = 'AAAAAAAAAAAA';
-            $secret = 'aaaaaaaaaaaaaaaaaa';
-            $region = 'ap-southeast-2';
-            $bucketprefix = '';
+        $keyid = 'AAAAAAAAAAAA';
+        $secret = 'aaaaaaaaaaaaaaaaaa';
+        $region = 'ap-southeast-2';
+        $bucketprefix = '';
 
-            $bucketname = 'foobar';
+        $bucketname = 'foobar';
 
-            $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-            $provisioner->create_s3_client($mock);
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $provisioner->create_s3_client($mock);
 
-            // Reflection magic as we are directly testing a private method.
-            $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'check_bucket_exists');
-            $method->setAccessible(true); // Allow accessing of private method.
-            $result = $method->invoke($provisioner, $bucketname);
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'check_bucket_exists');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke($provisioner, $bucketname);
 
-            $this->assertTrue($result);
+        $this->assertTrue($result);
     }
 
     /**
@@ -147,24 +147,24 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
             ));
         });
 
-            $keyid = 'AAAAAAAAAAAA';
-            $secret = 'aaaaaaaaaaaaaaaaaa';
-            $region = 'ap-southeast-2';
-            $bucketprefix = '';
+        $keyid = 'AAAAAAAAAAAA';
+        $secret = 'aaaaaaaaaaaaaaaaaa';
+        $region = 'ap-southeast-2';
+        $bucketprefix = '';
 
-            $bucketname = 'foobar.bah.joo.bar';
+        $bucketname = 'foobar.bah.joo.bar';
 
-            $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-            $provisioner->create_s3_client($mock);
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $provisioner->create_s3_client($mock);
 
-            // Reflection magic as we are directly testing a private method.
-            $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_s3_bucket');
-            $method->setAccessible(true); // Allow accessing of private method.
-            $result = $method->invoke($provisioner, $bucketname);
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_s3_bucket');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke($provisioner, $bucketname);
 
-            $this->assertFalse($result->status);
-            $this->assertEquals($response['code'], $result->code);
-            $this->assertEquals($response['message'], $result->message);
+        $this->assertFalse($result->status);
+        $this->assertEquals($response['code'], $result->code);
+        $this->assertEquals($response['message'], $result->message);
     }
 
     /**
@@ -176,24 +176,24 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
         $mock = new MockHandler();
         $mock->append(new Result(array('Location' => 'http://foobar.bah.joo.bar.s3.amazonaws.com/')));
 
-            $keyid = 'AAAAAAAAAAAA';
-            $secret = 'aaaaaaaaaaaaaaaaaa';
-            $region = 'ap-southeast-2';
-            $bucketprefix = '';
+        $keyid = 'AAAAAAAAAAAA';
+        $secret = 'aaaaaaaaaaaaaaaaaa';
+        $region = 'ap-southeast-2';
+        $bucketprefix = '';
 
-            $bucketname = 'foobar.bah.joo.bar';
+        $bucketname = 'foobar.bah.joo.bar';
 
-            $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-            $provisioner->create_s3_client($mock);
+        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
+        $provisioner->create_s3_client($mock);
 
-            // Reflection magic as we are directly testing a private method.
-            $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_s3_bucket');
-            $method->setAccessible(true); // Allow accessing of private method.
-            $result = $method->invoke($provisioner, $bucketname);
+        // Reflection magic as we are directly testing a private method.
+        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_s3_bucket');
+        $method->setAccessible(true); // Allow accessing of private method.
+        $result = $method->invoke($provisioner, $bucketname);
 
-            $this->assertTrue($result->status);
-            $this->assertEquals(0, $result->code);
-            $this->assertEquals('http://foobar.bah.joo.bar.s3.amazonaws.com/', $result->message);
+        $this->assertTrue($result->status);
+        $this->assertEquals(0, $result->code);
+        $this->assertEquals('http://foobar.bah.joo.bar.s3.amazonaws.com/', $result->message);
     }
 
     /**
