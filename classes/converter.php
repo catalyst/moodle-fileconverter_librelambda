@@ -360,7 +360,7 @@ class converter implements \core_files\converter_interface {
                 'id' => $conversion->get('id'),
                 'status' => $this->status
             ));
-        $event = \fileconverter_librelambda\event\poll_conversion_status::create($eventinfo);
+        $event = \fileconverter_librelambda\event\start_document_conversion::create($eventinfo);
         $event->trigger();
 
         return $this;
