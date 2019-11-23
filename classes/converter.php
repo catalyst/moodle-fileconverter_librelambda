@@ -358,10 +358,9 @@ class converter implements \core_files\converter_interface {
                 'key' => $file->get_pathnamehash(),
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
-                'sourcefileid' => $conversion->get('sourcefileid'),
                 'status' => $this->status
             ));
-        $event = \fileconverter_librelambda\event\poll_conversion_status::create($eventinfo);
+        $event = \fileconverter_librelambda\event\start_document_conversion::create($eventinfo);
         $event->trigger();
 
         return $this;
@@ -420,7 +419,6 @@ class converter implements \core_files\converter_interface {
                 'key' => $file->get_pathnamehash(),
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
-                'sourcefileid' => $conversion->get('sourcefileid'),
                 'status' => $this->status
             ));
         $event = \fileconverter_librelambda\event\poll_conversion_status::create($eventinfo);
