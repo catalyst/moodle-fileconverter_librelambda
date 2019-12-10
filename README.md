@@ -4,7 +4,9 @@
 
 This is a file converter plugin for the Moodle (https://moodle.org) Learning Management System (LMS). The primary function of this plugin is to convert student submissions into the PDF file format, to allow teachers to use the annotate PDF functionality of Moodle.
 
-More information on the annotate PDF function of Moodle can be found: `https://docs.moodle.org/36/en/Using_Assignment#Annotating_submissions`
+More information on the annotate PDF function of Moodle can be found:
+
+https://docs.moodle.org/36/en/Using_Assignment#Annotating_submissions
 
 This plugin uses Amazon Web Services (AWS) services to provide the conversion to PDF, the primary AWS services used are [Lambda](https://aws.amazon.com/lambda/) and [S3](https://aws.amazon.com/s3/). The plugin interfaces Moodle with the AWS services. Everything you need to setup both Moodle and AWS is included in this plugin.
 
