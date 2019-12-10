@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'fileconverter_librelambda';
 $plugin->release = '2019063000';
 $plugin->version = 2019063000;
-$plugin->requires = 2018051700;
+$plugin->requires = 2017111309;
 $plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = array(
         'local_aws' => 2018061900
