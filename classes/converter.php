@@ -399,7 +399,10 @@ class converter implements \core_files\converter_interface {
             $this->delete_converted_file($file->get_pathnamehash());
         } catch (S3Exception $e) {
             $errorcode = $e->getAwsErrorCode();
-            if ($errorcode == 'NoSuchKey') {
+            $timecreated = $conversion->get('timecreated');
+            $timemodified = $conversion->get('timemodified');
+            $timeinprogress = $timemodified - $timecreated;
+            if ($errorcode == 'NoSuchKey' && ($timeinprogress < 3600)) {
                 $conversion->set('status', conversion::STATUS_IN_PROGRESS);
             } else {
                 $conversion->set('status', conversion::STATUS_FAILED);
