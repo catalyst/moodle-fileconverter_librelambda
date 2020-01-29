@@ -46,6 +46,6 @@ class poll_conversion_status extends \core\event\base {
     }
 
     public function get_description() {
-        return get_string('event:poll_conversion_status', 'fileconverter_librelambda');
+        return "The conversion with id '{$this->other['id']}' has been polled and returned the status '{$this->other['status']}'.";
     }
 }

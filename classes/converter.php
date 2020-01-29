@@ -397,13 +397,16 @@ class converter implements \core_files\converter_interface {
             $conversion->store_destfile_from_path($saveas);
             $conversion->set('status', conversion::STATUS_COMPLETE);
             $this->delete_converted_file($file->get_pathnamehash());
+            $this->status = conversion::STATUS_COMPLETE;
         } catch (S3Exception $e) {
             $errorcode = $e->getAwsErrorCode();
             $timeinprogress = $conversion->get('timemodified') - $conversion->get('timecreated');
             if ($errorcode == 'NoSuchKey' && ($timeinprogress < $this->config->conversion_timeout)) {
                 $conversion->set('status', conversion::STATUS_IN_PROGRESS);
+                $this->status = conversion::STATUS_IN_PROGRESS;
             } else {
                 $conversion->set('status', conversion::STATUS_FAILED);
+                $this->status = conversion::STATUS_FAILED;
             }
 
         }

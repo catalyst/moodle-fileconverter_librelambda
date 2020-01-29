@@ -46,6 +46,6 @@ class start_document_conversion extends \core\event\base {
     }
 
     public function get_description() {
-        return get_string('event:start_document_conversion', 'fileconverter_librelambda');
+        return "The conversion with id '{$this->other['id']}' has been commenced with status '{$this->other['status']}'.";
     }
 }
