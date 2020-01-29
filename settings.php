@@ -73,4 +73,10 @@ if ($hassiteconfig) {
             get_string('settings:aws:region_help', 'fileconverter_librelambda'),
             'ap-southeast-2',
             $regionoptions));
+
+    $settings->add(new admin_setting_configduration('fileconverter_librelambda/conversion_timeout',
+            get_string('settings:conversion_timeout', 'fileconverter_librelambda'),
+            get_string('settings:conversion_timeout_help', 'fileconverter_librelambda'),
+            3600,
+            HOURSECS));
 }
