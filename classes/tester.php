@@ -76,6 +76,13 @@ class tester {
     protected $outputbucket;
 
     /**
+     * Use AWS credentials from the environment.
+     *
+     * @var string
+     */
+    protected $usesdkcreds;
+
+    /**
      *
      * @var \Aws\S3\S3Client S3 client.
      */
@@ -89,10 +96,12 @@ class tester {
      * @param string $region The AWS region to create the environment in.
      * @param string $inputbucket The AWS S3 input bucket name.
      * @param string $outputbucket The AWS S3 output bucket name.
+     * @param string $usesdkcreds Use AWS credentials from the environment.
      */
-    public function __construct($keyid, $secret, $region, $inputbucket, $outputbucket) {
+    public function __construct($keyid, $secret, $region, $inputbucket, $outputbucket, $usesdkcreds) {
         global $CFG;
 
+        $this->usesdkcreds = $usesdkcreds;
         $this->keyid = $keyid;
         $this->secret = $secret;
         $this->region = $region;
@@ -133,13 +142,11 @@ class tester {
      * @return \Aws\S3\S3Client
      */
     public function create_s3_client($handler=null) {
-        $connectionoptions = array(
-                'version' => 'latest',
-                'region' => $this->region,
-                'credentials' => [
-                        'key' => $this->keyid,
-                        'secret' => $this->secret
-                ]);
+        $connectionoptions = array('version' => 'latest', 'region' => $this->region);
+
+        if (!$this->usesdkcreds) {
+            $connectionoptions['credentials'] = array('key' => $this->keyid, 'secret' => $this->secret);
+        }
 
         // Check if we are using the Moodle proxy.
         if ($this->useproxy) {
