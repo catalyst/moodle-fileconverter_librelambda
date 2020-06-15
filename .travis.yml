@@ -39,7 +39,7 @@ env:
   - DB=mysqli MOODLE_BRANCH=MOODLE_38_STABLE
   - DB=pgsql MOODLE_BRANCH=master
   - DB=mysqli MOODLE_BRANCH=master
-  
+
 matrix:
   exclude:
     - php: 7.0
@@ -68,9 +68,11 @@ matrix:
       env: DB=mysqli MOODLE_BRANCH=MOODLE_34_STABLE
 
 before_install:
+  - export MOODLE_VERSION=$(echo "$MOODLE_BRANCH" | cut -d'_' -f 2)
   - phpenv config-rm xdebug.ini
-  - nvm install 8.9
-  - nvm use 8.9
+  - if [ "$MOODLE_VERSION" = 36 ] || [ "$MOODLE_VERSION" -le 34 ]; then NVMVERSION=8.9; else NVMVERSION=14.0.0; fi
+  - nvm install $NVMVERSION;
+  - nvm use $NVMVERSION;
   - cd ../..
   - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^2
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"

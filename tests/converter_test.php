@@ -426,4 +426,38 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         $this->assertEquals(conversion::STATUS_FAILED, $conversion->get('status'));
 
     }
+
+    /**
+     * Test the client still creates properly when using proxy settings.
+     */
+    public function test_client_uses_proxy() {
+        global $CFG;
+        $this->resetAfterTest();
+
+        $converter1 = new \fileconverter_librelambda\converter();
+        $client1 = $converter1->create_client();
+
+        // Test the client creates correctly.
+        $this->assertTrue($client1 instanceof \Aws\S3\S3Client);
+
+        // Now set some configs.
+        $CFG->proxyhost = '127.0.0.1';
+        $CFG->proxyuser = 'user';
+        $CFG->proxypassword = 'password';
+        $CFG->proxyport = '1337';
+
+        $converter2 = new \fileconverter_librelambda\converter();
+        $client2 = $converter2->create_client();
+
+        // Test the client creates correctly with proxy settings.
+        $this->assertTrue($client2 instanceof \Aws\S3\S3Client);
+
+        // Now change to SOCKS proxy.
+        $CFG->proxytype = 'SOCKS5';
+        $converter3 = new \fileconverter_librelambda\converter();
+        $client3 = $converter3->create_client();
+
+        // Test the client creates correctly with proxy settings.
+        $this->assertTrue($client3 instanceof \Aws\S3\S3Client);
+    }
 }

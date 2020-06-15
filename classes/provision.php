@@ -81,6 +81,10 @@ class provision {
      */
     private $cloudformationclient;
 
+    /**
+     * @var bool whether we should use a proxy.
+     */
+    private $useproxy;
 
     /**
      * The constructor for the class
@@ -102,6 +106,8 @@ class provision {
         } else {
             $this->bucketprefix = $bucketprefix;
         }
+
+        $this->useproxy = get_config('fileconverter_librelambda', 'useproxy');
 
     }
 
@@ -152,6 +158,11 @@ class provision {
                         'key' => $this->keyid,
                         'secret' => $this->secret
                 ]);
+
+        // Check if we are using the Moodle proxy.
+        if ($this->useproxy) {
+            $connectionoptions['http'] = ['proxy' => \local_aws\local\aws_helper::get_proxy_string()];
+        }
 
         // Allow handler overriding for testing.
         if ($handler != null) {
@@ -314,6 +325,11 @@ class provision {
                 'key' => $this->keyid,
                 'secret' => $this->secret
             ]);
+
+        // Check if we are using the Moodle proxy.
+        if ($this->useproxy) {
+            $connectionoptions['http'] = ['proxy' => \local_aws\local\aws_helper::get_proxy_string()];
+        }
 
         // Allow handler overriding for testing.
         if ($handler != null) {

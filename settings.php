@@ -79,4 +79,8 @@ if ($hassiteconfig) {
             get_string('settings:conversion_timeout_help', 'fileconverter_librelambda'),
             3600,
             HOURSECS));
+
+    $settings->add(new admin_setting_configcheckbox('fileconverter_librelambda/useproxy',
+        get_string('settings:useproxy', 'fileconverter_librelambda'),
+        get_string('settings:useproxy_help', 'fileconverter_librelambda'), 1));
 }
