@@ -103,6 +103,11 @@ class converter implements \core_files\converter_interface {
                 'secret' => $this->config->api_secret
             ]);
 
+        // Check if we are using the Moodle proxy.
+        if ($this->config->useproxy) {
+            $connectionoptions['http'] = ['proxy' => \local_aws\local\aws_helper::get_proxy_string()];
+        }
+
         // Allow handler overriding for testing.
         if ($handler != null) {
             $connectionoptions['handler'] = $handler;
