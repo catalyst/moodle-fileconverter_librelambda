@@ -26,16 +26,40 @@ defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
 
-    // Basic settings.
-    $settings->add(new admin_setting_configtext('fileconverter_librelambda/api_key',
+    $converter = new \fileconverter_librelambda\converter();
+
+    $settings->add(new admin_setting_heading('tool_objectfs/generalsettings',
+            new lang_string('settings:generalheader', 'fileconverter_librelambda'), ''));
+
+    $settings->add(new admin_setting_configduration('fileconverter_librelambda/conversion_timeout',
+            get_string('settings:conversion_timeout', 'fileconverter_librelambda'),
+            get_string('settings:conversion_timeout_help', 'fileconverter_librelambda'),
+            3600,
+            HOURSECS));
+
+    $settings->add(new admin_setting_configcheckbox('fileconverter_librelambda/useproxy',
+        get_string('settings:useproxy', 'fileconverter_librelambda'),
+        get_string('settings:useproxy_help', 'fileconverter_librelambda'), 1));
+
+    $settings->add(new \admin_setting_heading('tool_objectfs/aws',
+            new \lang_string('settings:aws:header', 'fileconverter_librelambda'), $converter->define_client_check()));
+
+    $settings->add(new \admin_setting_configcheckbox('fileconverter_librelambda/usesdkcreds',
+        new \lang_string('settings:aws:usesdkcreds', 'fileconverter_librelambda'),
+        $converter->define_client_check_sdk(), ''));
+
+    if (!$converter->get_usesdkcreds()) {
+        // Basic settings.
+        $settings->add(new admin_setting_configtext('fileconverter_librelambda/api_key',
             get_string('settings:aws:key', 'fileconverter_librelambda'),
             get_string('settings:aws:key_help', 'fileconverter_librelambda'),
             ''));
 
-    $settings->add(new admin_setting_configpasswordunmask('fileconverter_librelambda/api_secret',
+        $settings->add(new admin_setting_configpasswordunmask('fileconverter_librelambda/api_secret',
             get_string('settings:aws:secret', 'fileconverter_librelambda'),
             get_string('settings:aws:secret_help', 'fileconverter_librelambda'),
             ''));
+    }
 
     $settings->add(new admin_setting_configtext('fileconverter_librelambda/s3_input_bucket',
             get_string('settings:aws:input_bucket', 'fileconverter_librelambda'),
@@ -74,13 +98,4 @@ if ($hassiteconfig) {
             'ap-southeast-2',
             $regionoptions));
 
-    $settings->add(new admin_setting_configduration('fileconverter_librelambda/conversion_timeout',
-            get_string('settings:conversion_timeout', 'fileconverter_librelambda'),
-            get_string('settings:conversion_timeout_help', 'fileconverter_librelambda'),
-            3600,
-            HOURSECS));
-
-    $settings->add(new admin_setting_configcheckbox('fileconverter_librelambda/useproxy',
-        get_string('settings:useproxy', 'fileconverter_librelambda'),
-        get_string('settings:useproxy_help', 'fileconverter_librelambda'), 1));
 }

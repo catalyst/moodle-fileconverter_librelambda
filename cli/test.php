@@ -31,13 +31,14 @@ require_once($CFG->libdir.'/clilib.php');
 // Now get cli options.
 list($options, $unrecognized) = cli_get_params(
     array(
-        'keyid'             => false,
-        'secret'            => false,
-        'help'              => false,
-        'region'            => false,
+        'keyid'              => false,
+        'secret'             => false,
+        'help'               => false,
+        'region'             => false,
         'input-bucket'       => '',
         'output-bucket'      => '',
-        'file'              => ''
+        'file'               => '',
+        'use-sdk-creds'      => 0
     ),
     array(
         'h' => 'help'
@@ -48,12 +49,11 @@ if ($unrecognized) {
     $unrecognized = implode("\n  ", $unrecognized);
     cli_error(get_string('cliunknowoption', 'admin', $unrecognized));
 }
-
-if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']
-    || !$options['input-bucket'] || !$options['output-bucket']) {
-    $help = "Command line Librelmbda provision.
+$help = "Command line Librelmbda provision.
 This command line script will provision the Librelambda environment in AWS.
 It will setup the input and output buckets as well as the Lambda function in S3.
+If you set use-sdk-creds=1, It will use credential set in AWS Credentials File.
+(https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials_profiles.html)
 
 Options:
 --keyid=STRING            AWS API Access Key ID.
@@ -67,9 +67,22 @@ Options:
 --output-bucket=STRING    The output AWS S3 bucket to use.
                           Must exist.
 --file=STRING             The file (with path) to convert.
+--use-sdk-creds           1:Use sdk credentials,
+                          0:Use provided credentials.
 
 -h, --help                Print out this help
+";
 
+$sdkexample = "
+Example:
+\$sudo -u www-data php files/converter/librelambda/cli/test.php \
+--region=ap-southeast-2 \
+--input-bucket=librelambda_input \
+--output-bucket=librelambda_output \
+--file='\\tmp\\test.odt' \
+--use-sdk-creds=1
+";
+$example = "
 Example:
 \$sudo -u www-data php files/converter/librelambda/cli/test.php \
 --keyid=QKIAIVYPO6FXJESSW4HQ \
@@ -77,10 +90,21 @@ Example:
 --region=ap-southeast-2 \
 --input-bucket=librelambda_input \
 --output-bucket=librelambda_output \
---file='\\tmp\\test.odt'
+--file='\\tmp\\test.odt' \
+--use-sdk-creds=0
 ";
 
-    echo $help;
+if ($options['help']) {
+    echo $help.$sdkexample.$example;
+    die;
+} else if ($options['use-sdk-creds']) {
+    if (!$options['region'] || !$options['input-bucket'] || !$options['output-bucket'] || !$options['use-sdk-creds']) {
+        echo $help.$sdkexample;
+        die;
+    }
+} else if (!$options['keyid'] || !$options['secret'] || !$options['region']
+|| !$options['input-bucket'] || !$options['output-bucket'] || !$options['use-sdk-creds']) {
+    echo $help.$example;
     die;
 }
 
@@ -89,7 +113,8 @@ $tester = new \fileconverter_librelambda\tester(
     $options['secret'],
     $options['region'],
     $options['input-bucket'],
-    $options['output-bucket']);
+    $options['output-bucket'],
+    $options['use-sdk-creds']);
 
 // Upload file to input S3 bucket.
 cli_heading(get_string('test:uploadfile', 'fileconverter_librelambda'));

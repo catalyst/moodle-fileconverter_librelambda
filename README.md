@@ -160,6 +160,18 @@ sudo -u www-data php files/converter/librelambda/cli/test.php \
 --input-bucket=<inputbucket> \
 --output-bucket=<outputbucket> \
 --file='/var/www/moodle/files/converter/librelambda/tests/fixtures/testsubmission.odt'
+--use-sdk-creds=0
+```
+
+To use credential set in AWS Credentials File, use use-sdk-creds=1.
+(https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials_profiles.html) 
+```console
+sudo -u www-data php files/converter/librelambda/cli/test.php \
+--region=<region> \
+--input-bucket=<inputbucket> \
+--output-bucket=<outputbucket> \
+--file='/var/www/moodle/files/converter/librelambda/tests/fixtures/testsubmission.odt'
+--use-sdk-creds=1
 ```
 
 **Note:** the user may be different to www-data on your system.
