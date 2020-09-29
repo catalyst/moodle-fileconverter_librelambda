@@ -84,8 +84,13 @@ class converter implements \core_files\converter_interface {
     /**
      * Class constructor
      */
-    public function __construct() {
+    public function __construct($config = []) {
         $this->config = get_config('fileconverter_librelambda');
+        if (count($config)) {
+            foreach ($config as $key => $val) {
+                $this->config->{$key} = $val;
+            }
+        }
     }
 
     /**
@@ -98,7 +103,7 @@ class converter implements \core_files\converter_interface {
         $connectionoptions = array('version' => 'latest',
                             'region' => isset($this->config->api_region) ? $this->config->api_region : 'ap-southeast-2');
 
-        if (isset($this->config->usesdkcreds)) {
+        if (isset($this->config->usesdkcreds) && !$this->config->usesdkcreds) {
             $connectionoptions['credentials'] = array('key' => $this->config->api_key, 'secret' => $this->config->api_secret);
         }
 
@@ -284,7 +289,12 @@ class converter implements \core_files\converter_interface {
      */
     public static function are_requirements_met($rettype = 'BASIC') {
         global $OUTPUT;
-        $converter = new \fileconverter_librelambda\converter();
+        if ($rettype == 'SDK') {
+            $config = array('usesdkcreds' => true);
+            $converter = new \fileconverter_librelambda\converter($config);
+        } else {
+            $converter = new \fileconverter_librelambda\converter();
+        }
 
         // First check that we have the basic configuration settings set.
         if (!self::is_config_set($converter)) {
@@ -541,14 +551,10 @@ class converter implements \core_files\converter_interface {
         global $OUTPUT;
         $text = '';
         $converter = new \fileconverter_librelambda\converter();
-        if (!$converter->get_usesdkcreds()) {
-            $converter->set_usesdkcreds(true);
-            if ($converter::are_requirements_met('SDK')) {
-                $text = $OUTPUT->notification(get_string('settings:aws:sdkcredsok', 'fileconverter_librelambda'), 'notifysuccess');
-            } else {
-                $text = $OUTPUT->notification(get_string('settings:aws:sdkcredserror', 'fileconverter_librelambda'), 'warning');
-            }
-            $converter->set_usesdkcreds(false);
+        if ($converter::are_requirements_met('SDK')) {
+            $text = $OUTPUT->notification(get_string('settings:aws:sdkcredsok', 'fileconverter_librelambda'), 'notifysuccess');
+        } else {
+            $text = $OUTPUT->notification(get_string('settings:aws:sdkcredserror', 'fileconverter_librelambda'), 'warning');
         }
         return $text;
     }
@@ -563,5 +569,4 @@ class converter implements \core_files\converter_interface {
         $converter = new \fileconverter_librelambda\converter();
         return $converter::are_requirements_met('CONNECTION');
     }
-
 }
