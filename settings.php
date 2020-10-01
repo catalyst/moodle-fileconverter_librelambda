@@ -40,7 +40,7 @@ if ($hassiteconfig) {
     $clientcheck = $librelambdapage ? $converter->define_client_check() : '';
     $sdkcheck = $librelambdapage ? $converter->define_client_check_sdk() : '';
 
-    $settings->add(new admin_setting_heading('tool_objectfs/generalsettings',
+    $settings->add(new admin_setting_heading('fileconverter_librelambda/generalsettings',
             new lang_string('settings:generalheader', 'fileconverter_librelambda'), ''));
 
     $settings->add(new admin_setting_configduration('fileconverter_librelambda/conversion_timeout',
@@ -53,7 +53,7 @@ if ($hassiteconfig) {
         get_string('settings:useproxy', 'fileconverter_librelambda'),
         get_string('settings:useproxy_help', 'fileconverter_librelambda'), 1));
 
-    $settings->add(new \admin_setting_heading('tool_objectfs/aws',
+    $settings->add(new \admin_setting_heading('fileconverter_librelambda/aws',
         new \lang_string('settings:aws:header', 'fileconverter_librelambda'), $clientcheck));
 
     $settings->add(new \admin_setting_configcheckbox('fileconverter_librelambda/usesdkcreds',
