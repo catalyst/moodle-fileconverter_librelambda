@@ -25,8 +25,20 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
+    // Check if we are actually on the plugin settings page.
+    $librelambdapage = false;
+    if ($PAGE->has_set_url()) {
+        $settingsurl = new moodle_url('/admin/settings.php');
+        $thisurl = $PAGE->url;
+        if ($settingsurl->compare($thisurl,  URL_MATCH_BASE) &&
+                $thisurl->get_param('section') == 'fileconverterlibrelambda') {
+            $librelambdapage = true;
+        }
+    }
 
     $converter = new \fileconverter_librelambda\converter();
+    $clientcheck = $librelambdapage ? $converter->define_client_check() : '';
+    $sdkcheck = $librelambdapage ? $converter->define_client_check_sdk() : '';
 
     $settings->add(new admin_setting_heading('tool_objectfs/generalsettings',
             new lang_string('settings:generalheader', 'fileconverter_librelambda'), ''));
@@ -42,11 +54,10 @@ if ($hassiteconfig) {
         get_string('settings:useproxy_help', 'fileconverter_librelambda'), 1));
 
     $settings->add(new \admin_setting_heading('tool_objectfs/aws',
-            new \lang_string('settings:aws:header', 'fileconverter_librelambda'), $converter->define_client_check()));
+        new \lang_string('settings:aws:header', 'fileconverter_librelambda'), $clientcheck));
 
     $settings->add(new \admin_setting_configcheckbox('fileconverter_librelambda/usesdkcreds',
-        new \lang_string('settings:aws:usesdkcreds', 'fileconverter_librelambda'),
-        $converter->define_client_check_sdk(), ''));
+        new \lang_string('settings:aws:usesdkcreds', 'fileconverter_librelambda'), $sdkcheck, ''));
 
     if (!$converter->get_usesdkcreds()) {
         // Basic settings.
