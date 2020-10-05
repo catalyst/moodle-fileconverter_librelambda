@@ -108,7 +108,7 @@ class converter implements \core_files\converter_interface {
         }
 
         // Check if we are using the Moodle proxy.
-        if (isset($this->config->useproxy)) {
+        if ($this->config->useproxy) {
             $connectionoptions['http'] = ['proxy' => \local_aws\local\aws_helper::get_proxy_string()];
         }
 
