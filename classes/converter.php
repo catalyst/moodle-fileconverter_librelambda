@@ -199,11 +199,20 @@ class converter implements \core_files\converter_interface {
                 'Bucket' => $bucket));
 
             $connection->message = get_string('settings:connectionsuccess', 'fileconverter_librelambda');
-        } catch (S3Exception $e) {
+        } catch (\Aws\S3\Exception\S3Exception $e) {
+            $connection->success = false;
+            $details = $converter->get_exception_details($e);
+            $connection->message = get_string('settings:connectionfailure', 'fileconverter_librelambda') .' '. $details;
+        } catch (\GuzzleHttp\Exception\InvalidArgumentException $e) {
+            $connection->success = false;
+            $details = $converter->get_exception_details($e);
+            $connection->message = get_string('settings:connectionfailure', 'fileconverter_librelambda') .' '. $details;
+        } catch (\Aws\Exception\CredentialsException $e) {
             $connection->success = false;
             $details = $converter->get_exception_details($e);
             $connection->message = get_string('settings:connectionfailure', 'fileconverter_librelambda') .' '. $details;
         }
+
         return $connection;
     }
 
