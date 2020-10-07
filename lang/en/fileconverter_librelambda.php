@@ -58,6 +58,7 @@ $string['settings:conversion_timeout'] = 'Conversion timeout';
 $string['settings:conversion_timeout_help'] = 'How long should we wait for converted file.';
 $string['settings:useproxy'] = 'Use proxy';
 $string['settings:useproxy_help'] = 'Librelambda can use configured Moodle proxy to reach AWS API.';
+$string['settings:confignotset'] = 'Configuration not set properly';
 $string['provision:bucketexists'] = 'Bucket exists';
 $string['preparesubmissionsforannotation'] = 'Check LibreLambda conversions.';
 $string['provision:creatings3'] = 'Creating resource S3 Bucket';

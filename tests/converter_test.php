@@ -96,7 +96,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_bucket_accessible');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'input');
+        $result = $method->invoke($converter, 'input');
 
         $this->assertFalse($result->success);
     }
@@ -116,7 +116,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
          // Reflection magic as we are directly testing a private method.
          $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_bucket_accessible');
          $method->setAccessible(true); // Allow accessing of private method.
-         $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'input');
+         $result = $method->invoke($converter, 'input');
 
          $this->assertTrue($result->success);
     }
@@ -143,7 +143,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'have_bucket_permissions');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'bucket1');
+        $result = $method->invoke($converter, 'bucket1');
 
         $this->assertFalse($result->success);
     }
@@ -164,7 +164,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'have_bucket_permissions');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter, 'bucket1');
+        $result = $method->invoke($converter, 'bucket1');
 
         $this->assertTrue($result->success);
     }
