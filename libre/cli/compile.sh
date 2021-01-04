@@ -2,7 +2,7 @@
 
 # This script compiles LibreOffice.
 
-# This is the most important part, we set the comile options.
+# This is the most important part, we set the compile options.
 # Run ./autogen.sh --help to see wha each option means
 cd libreoffice
 

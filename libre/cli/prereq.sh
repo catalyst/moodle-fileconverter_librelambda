@@ -66,6 +66,7 @@ sudo cp -r /usr/share/liblangtag /usr/local/share/liblangtag/
 # Install required version of gperf
 curl -L http://ftp.gnu.org/pub/gnu/gperf/gperf-3.1.tar.gz | tar -xz
 cd gperf-3.1
+./configure
 make
 make check
 sudo make install

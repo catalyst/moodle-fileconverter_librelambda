@@ -315,7 +315,7 @@ After the above steps are completed, follow the instructions in the next section
 
 1. Run the following script from the cloned repository. This will download the LibreOffice source code. The command to run is: `./moodle-fileconverter_librelambda/libre/cli/getsource.sh`. You are free to examine this script in this repository to see what it does.
 
-After the above steps are completed follow the instructions in the next section, to compile LibreOffice.
+After the above steps are completed, follow the instructions in the next section, to compile LibreOffice.
 
 ##### Compile LibreOffice binaries
 
@@ -324,7 +324,7 @@ After the above steps are completed follow the instructions in the next section,
 
 ```console
 echo "hello world" > a.txt
-./libreoffice/instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard \
+./libreoffice/instdir/program/soffice.bin --headless --invisible --nodefault --nofirststartwizard \
 --nolockcheck --nologo --norestore --convert-to pdf --outdir $(pwd) a.txt
 ```
 
@@ -335,10 +335,10 @@ After the above steps are completed, follow the instructions in the next section
 ##### Create the LibreOffice archive and download it from the EC2
 1. Change to the LibreOffice directory: `cd libreoffice`
 2. Create the archive: `XZ_OPT=-e9 tar cJf ../lo.tar.xz instdir/`
-3. Download the archive to your local machine, using your favorite method.
+3. Download the archive to your local machine, using your favorite method. (e.g. rsync -azP -e "ssh -i $HOME/.ssh/somekey" ec2-user@hostname:/home/ec2-user/lo.tar.xz ./)
 
 Once you have the archive you can replace the existing archive in this repository at `/libre/lo.tar.xz`.
-Then when you run the provisioning script to setup the environment it will use the newly created LibreLambda archive for Lmabda.
+Then when you run the provisioning script to set up the environment it will use the newly created LibreLambda archive for Lmabda.
 
 ### Lambda Function
 TODO: this
