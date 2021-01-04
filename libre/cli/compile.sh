@@ -2,13 +2,6 @@
 
 # This script compiles LibreOffice.
 
-# Set this cache if you are going to compile several times.
-ccache --max-size 32 G && ccache -s
-
-# See https://github.com/cowboyd/therubyracer/issues/446#issuecomment-397159092
-# To resolve a mismatch in gcc and g++ versions on AWS
-sudo yum remove -y gcc48-c++ && sudo yum install -y gcc72-c++
-
 # This is the most important part, we set the comile options.
 # Run ./autogen.sh --help to see wha each option means
 cd libreoffice
@@ -28,12 +21,10 @@ cd libreoffice
     --disable-extension-update \
     --disable-firebird-sdbc \
     --disable-gio \
-    --disable-gstreamer-0-10 \
     --disable-gstreamer-1-0 \
-    --disable-gtk \
     --disable-gtk3 \
     --disable-introspection \
-    --disable-kde4 \
+    --disable-gui \
     --disable-largefile \
     --disable-lotuswordpro \
     --disable-lpsolve \

@@ -295,21 +295,21 @@ The process to create your own compiled LibreOffice binary archive is:
 
 ##### Launch an AWS EC2 instance using the same base environment as used by AWS Lambda
 
-1. Sign into the AWS Console as a user with enough permissions to launch an EC2 instance.
-2. Get the current AWS AMI ID that Lambda is using, this is always listed here: [Lambda Execution Environment and Available Libraries](https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html)
-3. On the *Lambda Execution Environment and Available Libraries* page click the link for the AMI ID, This will show the AMI in the AWS console and allow you to launch the AMI as an ECS instance.
+1. Sign in to the AWS Console as a user with enough permissions to launch an EC2 instance.
+2. Get the current AWS AMI ID that Lambda is using, this is the [AWS Linux 2 AMI](https://ap-southeast-2.console.aws.amazon.com/ec2/v2/home?region=ap-southeast-2#Images:visibility=public-images;search=ami-06ce513624b435a22;sort=name)
+3. Clicking the link aboce will show the AMI in the AWS console and allow you to launch the AMI as an ECS instance.
 4. Launch the AMI as an EC2. A *c5d.4xlarge* is recommended. As part of the launch configuration make sure you either generate or use an existing SSH keypair as you will need to SSH into the instance.
 
-After the above steps are completed follow the instructions in the next section, to configure the instance and install the required prerequisites.
+After the above steps are completed, follow the instructions in the next section, to configure the instance and install the required prerequisites.
 
 ##### Configure the EC2 instance with all the prerequistes required to compile LibreOffice
 
-1. SSH into the launched EC2 instance.
+1. SSH into the launched EC2 instance. (**Note:** the default username for the instance will be "_ec2-user_")
 2. Use the following command to install git onto the instance: `sudo yum update -y & sudo yum install -y git`
-3. Now that git is installed clone this repository onto the instance: `git clone https://github.com/catalyst/moodle-fileconverter_librelambda.git`
+3. Now that git is installed, clone this repository onto the instance: `git clone https://github.com/catalyst/moodle-fileconverter_librelambda.git`
 4. Run the following script from the cloned repository. This will install the all the prerequisites to the EC2 instance. The command to run is: `sudo ./moodle-fileconverter_librelambda/libre/cli/prereq.sh`. You are free to examine this script in this repository to see what it does.
 
-After the above steps are completed follow the instructions in the next section, to get the source code for LibreOffice.
+After the above steps are completed, follow the instructions in the next section, to get the source code for LibreOffice.
 
 ##### Get the LibreOffice code from the LibreOffice project
 
@@ -330,7 +330,7 @@ echo "hello world" > a.txt
 
 **NOTE:** Compiling LibreOffice will take time. You can increase the compilation speed by choosing an EC2 instance size with more CPU resources. (This will cost more money).
 
-After the above steps are completed follow the instructions in the next section, to create and download the LibreOffice archive.
+After the above steps are completed, follow the instructions in the next section, to create and download the LibreOffice archive.
 
 ##### Create the LibreOffice archive and download it from the EC2
 1. Change to the LibreOffice directory: `cd libreoffice`
