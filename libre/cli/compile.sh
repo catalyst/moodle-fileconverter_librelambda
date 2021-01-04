@@ -43,9 +43,7 @@ cd libreoffice
     --with-galleries="no" \
     --with-system-curl \
     --with-system-expat \
-    --with-system-libxml \
     --with-system-nss \
-    --with-system-openssl \
     --with-theme="no" \
     --without-export-validation \
     --without-fonts \
@@ -74,3 +72,10 @@ rm -rf ./instdir/share/gallery \
 ./instdir/NOTICE
 
 cd ../
+
+# Explicitly add shared libraries to office executable folder as they will be needed in Lambda environment.
+cp /usr/lib64/libssl3.so ./libreoffice/instdir/program/
+cp /usr/lib64/libxslt.so ./libreoffice/instdir/program/
+cp /usr/lib64/libxslt.so.1 ./libreoffice/instdir/program/
+cp /usr/lib64/libfontconfig.so ./libreoffice/instdir/program/
+cp /usr/lib64/libfontconfig.so.1 ./libreoffice/instdir/program/
