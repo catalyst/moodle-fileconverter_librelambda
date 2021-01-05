@@ -41,7 +41,6 @@ cd libreoffice
     --disable-sdremote-bluetooth \
     --enable-mergelibs \
     --with-galleries="no" \
-    --with-system-curl \
     --with-system-expat \
     --with-system-nss \
     --with-theme="no" \
@@ -69,16 +68,43 @@ rm -rf ./instdir/share/gallery \
     ./instdir/readmes \
     ./instdir/CREDITS.fodt \
     ./instdir/LICENSE* \
-./instdir/NOTICE
+    ./instdir/NOTICE \
+    ./instdir/program/wizards
 
 cd ../
 
 # Explicitly add shared libraries to office executable folder as they will be needed in Lambda environment.
-cp /usr/lib64/libssl3.so ./libreoffice/instdir/program/
-cp /usr/lib64/libxslt.so ./libreoffice/instdir/program/
-cp /usr/lib64/libxslt.so.1 ./libreoffice/instdir/program/
+# Made by running "ldd ./libreoffice/instdir/program/soffice.bin | grep -v 'ec2-user'" and some trial and error.
+# Including running "logger.info(os.listdir('/usr/lib64'))" inside an existing Lambda function.
+cp /usr/lib64/libbz2.so.1 ./libreoffice/instdir/program/
+cp /usr/lib64/libcrypt.so.1  ./libreoffice/instdir/program/
+cp /usr/lib64/libcurl.so ./libreoffice/instdir/program/
+cp /usr/lib64/libcurl.so.4 ./libreoffice/instdir/program/
+cp /usr/lib64/libcurl.so.4.5.0 ./libreoffice/instdir/program/
+cp /usr/lib64/libexpat.so ./libreoffice/instdir/program/
+cp /usr/lib64/libexpat.so.1 ./libreoffice/instdir/program/
+cp /usr/lib64/libexpat.so.1.6.0 ./libreoffice/instdir/program/
 cp /usr/lib64/libfontconfig.so ./libreoffice/instdir/program/
 cp /usr/lib64/libfontconfig.so.1 ./libreoffice/instdir/program/
+cp /usr/lib64/libfreetype.so.6 ./libreoffice/instdir/program/
+cp /usr/lib64/libidn2.so.0 ./libreoffice/instdir/program/
+cp /usr/lib64/liblber-2.4.so.2 ./libreoffice/instdir/program/
+cp /usr/lib64/libldap-2.4.so.2 ./libreoffice/instdir/program/
+cp /usr/lib64/liblzma.so.5 ./libreoffice/instdir/program/
+cp /usr/lib64/libnghttp2.so.14 ./libreoffice/instdir/program/
+cp /usr/lib64/libnss3.so ./libreoffice/instdir/program/
+cp /usr/lib64/libpng15.so.15 ./libreoffice/instdir/program/
+cp /usr/lib64/libsasl2.so.3 ./libreoffice/instdir/program/
+cp /usr/lib64/libsmime3.so ./libreoffice/instdir/program/
+cp /usr/lib64/libssh2.so.1 ./libreoffice/instdir/program/
+cp /usr/lib64/libssl3.so ./libreoffice/instdir/program/
+cp /usr/lib64/libunistring.so.0 ./libreoffice/instdir/program/
+cp /usr/lib64/libuuid.so.1 ./libreoffice/instdir/program/
+cp /usr/lib64/libxml2.so ./libreoffice/instdir/program/
+cp /usr/lib64/libxml2.so.2 ./libreoffice/instdir/program/
+cp /usr/lib64/libxml2.so.2.9.1 ./libreoffice/instdir/program/
+cp /usr/lib64/libxslt.so ./libreoffice/instdir/program/
+cp /usr/lib64/libxslt.so.1 ./libreoffice/instdir/program/
 
 # Need to fix fonts location
 cp -rv/etc/fonts/ ./libreoffice/instdir
