@@ -79,3 +79,6 @@ cp /usr/lib64/libxslt.so ./libreoffice/instdir/program/
 cp /usr/lib64/libxslt.so.1 ./libreoffice/instdir/program/
 cp /usr/lib64/libfontconfig.so ./libreoffice/instdir/program/
 cp /usr/lib64/libfontconfig.so.1 ./libreoffice/instdir/program/
+
+# Need to fix fonts location
+cp -rv/etc/fonts/ ./libreoffice/instdir

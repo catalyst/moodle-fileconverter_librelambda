@@ -91,6 +91,7 @@ Resources:
       Environment:
         Variables:
           OutputBucket: !Join [ '-', [!Ref BucketPrefix, 'output'] ]
+          FONTCONFIG_PATH: '/tmp/instdir/program'
       FunctionName: lambdaconvert
       Handler: lambdaconvert.lambda_handler
       MemorySize: 256
