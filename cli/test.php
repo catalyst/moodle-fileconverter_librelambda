@@ -98,12 +98,12 @@ if ($options['help']) {
     echo $help.$sdkexample.$example;
     die;
 } else if ($options['use-sdk-creds']) {
-    if (!$options['region'] || !$options['input-bucket'] || !$options['output-bucket'] || !$options['use-sdk-creds']) {
+    if (!$options['region'] || !$options['input-bucket'] || !$options['output-bucket']) {
         echo $help.$sdkexample;
         die;
     }
 } else if (!$options['keyid'] || !$options['secret'] || !$options['region']
-|| !$options['input-bucket'] || !$options['output-bucket'] || !$options['use-sdk-creds']) {
+|| !$options['input-bucket'] || !$options['output-bucket']) {
     echo $help.$example;
     die;
 }
