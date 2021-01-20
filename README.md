@@ -23,12 +23,12 @@ The following sections outline the steps that need to be followed to install the
 3. [AWS Stack setup](#aws-stack-setup)
 4. [Plugin Setup](#plugin-setup)
 
-## Supported Moodle Versions
-This plugin currently supports Moodle:
+## Branches
 
-* 3.4
-* 3.5
-* 3.6
+| Moodle version    | Totara version   | Branch   | PHP  |
+| ----------------- | ---------------- | -------- | ---- |
+| Moodle 3.4 to 3.9 | Totara 12        | VERSION1 | 7.0+ |
+| Moodle 3.10+      | Totara 13        | VERSION2 | 7.3+ |
 
 ## Plugin Installation
 The following steps will help you install this plugin into your Moodle instance.
