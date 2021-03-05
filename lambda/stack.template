@@ -95,7 +95,7 @@ Resources:
       Handler: lambdaconvert.lambda_handler
       MemorySize: 256
       Role: !GetAtt LambdaRole.Arn
-      Runtime: python3.6
+      Runtime: python3.8
       Timeout: 600
       Layers:
         - !Ref LambdaOfficeLayer

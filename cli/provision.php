@@ -98,9 +98,7 @@ if ($resourcebucketresposnse->code !== 0 ) {
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('provision:bucketcreated', 'fileconverter_librelambda', array(
-        'bucket' => 'resource',
-        'location' => $resourcebucketresposnse->message)) . PHP_EOL . PHP_EOL;
+    echo $result->message . PHP_EOL . PHP_EOL;
 }
 
 // Upload Libre Office archive to resource bucket.
@@ -163,7 +161,7 @@ if ($createstackresponse->code !== 0 ) {
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('provision:stackcreated', 'fileconverter_librelambda', $createstackresponse->message) . PHP_EOL . PHP_EOL;
+    echo $createstackresponse->message . PHP_EOL . PHP_EOL;
 }
 
 // Print summary.

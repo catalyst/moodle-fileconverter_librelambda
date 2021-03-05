@@ -166,8 +166,18 @@ class tester {
         return $this->s3client;
     }
 
-
     /**
+     * Make a file key for S3
+     *
+     * @param string $filepath
+     * @return string $key
+     */
+    private function file_key($filepath) {
+        $fileinfo = pathinfo($filepath);
+        return $fileinfo['filename'];
+    }
+
+     /**
      * Put file into S3 bucket
      *
      * @param string $filepath
@@ -175,30 +185,29 @@ class tester {
      */
     private function bucket_put_object($filepath) {
         $result = new \stdClass();
-        $result->status = true;
         $result->code = 0;
-        $result->message = 'File not PDF';
 
         $client = $this->s3client;
-        $fileinfo = pathinfo($filepath);
 
-        $uploadparams = array(
+        $idparams = [
             'Bucket' => $this->inputbucket, // Required.
-            'Key' => $fileinfo['filename'], // Required.
+            'Key' => $this->file_key($filepath), // Required.
+        ];
+        $uploadparams = array_merge($idparams, [
             'SourceFile' => $filepath, // Required.
-            'Metadata' => array(
+            'Metadata' => [
                 'targetformat' => 'pdf',
                 'id' => 'abc123',
                 'sourcefileid' => '123456',
-            )
-        );
+            ],
+        ]);
 
         try {
             $putobject = $client->putObject($uploadparams);
             $result->message = $putobject['ObjectURL'];
 
+            $client->headObject($idparams);
         } catch (S3Exception $e) {
-            $result->status = false;
             $result->code = $e->getAwsErrorCode();
             $result->message = $e->getAwsErrorMessage();
         }
@@ -214,28 +223,23 @@ class tester {
      */
     private function bucket_get_object($filepath) {
         $result = new \stdClass();
-        $result->status = false;
         $result->code = 1;
         $result->message = '';
 
         $client = $this->s3client;
-        $fileinfo = pathinfo($filepath);
 
+        $filekey = $this->file_key($filepath);
         $downloadparams = array(
             'Bucket' => $this->outputbucket, // Required.
-            'Key' => $fileinfo['filename'], // Required.
+            'Key' => $filekey, // Required.
         );
-
-        $timeout = time() + (60 * 10); // Ten minute timeout.
-        $getobject = false;
 
         // Check for file until file available,
         // or we timeout.
-        while (time() < $timeout) {
+        for ($i = 0; $i < 60; $i++) {
             try {
                 $getobject = $client->getObject($downloadparams);
-                break;  // We have object.
-
+                break;
             } catch (S3Exception $e) {
                 // No such key error is expected as object may not have been converted yet.
                 // All other errors are bad.
@@ -249,25 +253,30 @@ class tester {
             sleep(5);  // Sleep for a bit before rechecking.
         }
 
-        // Check mime type of downloaded object.
-        if ($getobject) {
-            $tmpfile = tmpfile();
-            fwrite($tmpfile, $getobject['Body']);
-            $tmppath = stream_get_meta_data($tmpfile)['uri'];
-            $mimetype = mime_content_type($tmppath);
+        if (!isset($getobject)) {
+            $result->message = "Timeout: could not get $filekey";
+            return $result;
+        }
 
-            if ($mimetype == 'application/pdf') {
-                $result->status = true;
-                $result->code = 0;
-                $result->message = 'PDF created.';
-            }
-            fclose($tmpfile);
+        // Check mime type of downloaded object.
+        $tmppath = tempnam(sys_get_temp_dir(), 'converted').'.pdf';
+        $tmpfile = fopen($tmppath, 'w');
+        //$tmpfile = tmpfile();
+        fwrite($tmpfile, $getobject['Body']);
+        //$tmppath = stream_get_meta_data($tmpfile)['uri'];
+        $mimetype = mime_content_type($tmppath);
+        fclose($tmpfile);
+
+        if ($mimetype == 'application/pdf') {
+            $result->code = 0;
+            $result->message = "$tmppath PDF created.";
+        }
+        else {
+            $result->message = "$tmppath is not a PDF";
         }
 
         // Delete output bucket file.
-        if ($result->code == 0) {
-            $client->deleteObject($downloadparams);
-        }
+        $client->deleteObject($downloadparams);
 
         return $result;
     }
@@ -280,7 +289,6 @@ class tester {
      */
     public function upload_file($filepath) {
         $result = new \stdClass();
-        $result->status = true;
         $result->code = 0;
         $result->message = '';
 
@@ -295,7 +303,6 @@ class tester {
             // If we have bucket, upload file.
             $result = $this->bucket_put_object($filepath);
         } else {
-            $result->status = false;
             $result->code = 1;
             $result->message = get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
         }
@@ -312,7 +319,6 @@ class tester {
      */
     public function conversion_check($filepath) {
         $result = new \stdClass();
-        $result->status = true;
         $result->code = 0;
         $result->message = '';
 
@@ -327,7 +333,6 @@ class tester {
             // If we have bucket, try to download file.
             $result = $this->bucket_get_object($filepath);
         } else {
-            $result->status = false;
             $result->code = 1;
             $result->message = get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
         }

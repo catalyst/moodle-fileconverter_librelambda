@@ -98,12 +98,12 @@ if ($options['help']) {
     echo $help.$sdkexample.$example;
     die;
 } else if ($options['use-sdk-creds']) {
-    if (!$options['region'] || !$options['input-bucket'] || !$options['output-bucket'] || !$options['use-sdk-creds']) {
+    if (!$options['region'] || !$options['input-bucket'] || !$options['output-bucket']) {
         echo $help.$sdkexample;
         die;
     }
 } else if (!$options['keyid'] || !$options['secret'] || !$options['region']
-|| !$options['input-bucket'] || !$options['output-bucket'] || !$options['use-sdk-creds']) {
+|| !$options['input-bucket'] || !$options['output-bucket']) {
     echo $help.$example;
     die;
 }
@@ -129,13 +129,14 @@ if ($uploadresposnse->code != 0 ) {
 }
 
 echo get_string('test:conversioncheck', 'fileconverter_librelambda') . PHP_EOL . PHP_EOL;
+sleep(60); // No way it's going to be ready in less than a minute.
 $conversionresposnse = $tester->conversion_check($options['file']);
 if ($conversionresposnse->code != 0 ) {
     $errormsg = $conversionresposnse->code . ': ' . $conversionresposnse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
 } else {
-    echo get_string('test:conversioncomplete', 'fileconverter_librelambda') . PHP_EOL . PHP_EOL;
+    echo get_string('test:conversioncomplete', 'fileconverter_librelambda', $conversionresposnse->message) . PHP_EOL . PHP_EOL;
 }
 
 

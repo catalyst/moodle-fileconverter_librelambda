@@ -35,7 +35,9 @@ The following steps will help you install this plugin into your Moodle instance.
 
 1. Clone or copy the code for this repository into your Moodle instance at the following location: `<moodledir>/files/converter/librelambda`
 2. This plugin also depends on *local_aws* get the code from `https://github.com/catalyst/moodle-local_aws` and clone or copy it into `<moodledir>/local/aws`
-3. Run the upgrade: `sudo -u www-data php admin/cli/upgrade` **Note:** the user may be different to www-data on your system.
+3. Run the upgrade: `sudo -u www-data php admin/cli/upgrade`
+
+**Note:** the user may be different to www-data on your system.
 
 Once the plugin is installed, next the Moodle setup needs to be performed.
 
@@ -102,7 +104,7 @@ The `--set-config` option will automatically set the plugin settings in Moodle b
 The script will return output similar to, the following:
 
 ```console
-    
+
 == Creating resource S3 Bucket ==
 Created input bucket, at location http://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.amazonaws.com/
 
@@ -164,7 +166,7 @@ sudo -u www-data php files/converter/librelambda/cli/test.php \
 ```
 
 To use credential set in AWS Credentials File, use use-sdk-creds=1.
-(https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials_profiles.html) 
+(https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials_profiles.html)
 ```console
 sudo -u www-data php files/converter/librelambda/cli/test.php \
 --region=<region> \
@@ -175,8 +177,9 @@ sudo -u www-data php files/converter/librelambda/cli/test.php \
 ```
 
 **Note:** the user may be different to www-data on your system.
+**Note:** for unknown reasons running test first time after pushing to AWS stack may fail - just repeat.
 
-### Moodle assignment conversion 
+### Moodle assignment conversion
 
 A full end to end test can be performed in Moodle. This section outlines this process.
 
@@ -282,63 +285,85 @@ This section will outline how to compile LibreOffice for yourself to be used by 
 
 There are two main reasons why we need to custom compile LibreOffice to work with AWS Lambda. The first is we need to compile LibreOffice so it works in the same runtime environment as Lambda. The second is that Lambda has very limited disk space (512MB) which we can use to store and execute binaries. So we need to create a very minimal version of LibreOffice to stay under the disk space limits.
 
-Some basic knowledge of launching AWS EC2 instances as well as command line Linux administration is required to compile your own LibreOffice instance.
+Knowledge of Docker as well as command line Linux administration is required to compile your own LibreOffice installation.
 
 The process to create your own compiled LibreOffice binary archive is:
-* Launch an AWS EC2 instance using the same base environment as used by AWS Lambda
-* Configure the EC2 instance with all the prerequistes required to compile LibreOffice
 * Get the LibreOffice code from the LibreOffice project
-* Compile LibreOffice binaries
-* Create the LibreOffice archive and download it from the EC2
+* Compile LibreOffice binaries in a container based on one used for AWS Lambda
+* Create the LibreOffice archive
 
-**NOTE:** There will be EC2 costs associated from AWS with compiling your own LibreOffice.
-
-##### Launch an AWS EC2 instance using the same base environment as used by AWS Lambda
-
-1. Sign into the AWS Console as a user with enough permissions to launch an EC2 instance.
-2. Get the current AWS AMI ID that Lambda is using, this is always listed here: [Lambda Execution Environment and Available Libraries](https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html)
-3. On the *Lambda Execution Environment and Available Libraries* page click the link for the AMI ID, This will show the AMI in the AWS console and allow you to launch the AMI as an ECS instance.
-4. Launch the AMI as an EC2. A *c5d.4xlarge* is recommended. As part of the launch configuration make sure you either generate or use an existing SSH keypair as you will need to SSH into the instance.
-
-After the above steps are completed follow the instructions in the next section, to configure the instance and install the required prerequisites.
-
-##### Configure the EC2 instance with all the prerequistes required to compile LibreOffice
-
-1. SSH into the launched EC2 instance.
-2. Use the following command to install git onto the instance: `sudo yum update -y & sudo yum install -y git`
-3. Now that git is installed clone this repository onto the instance: `git clone https://github.com/catalyst/moodle-fileconverter_librelambda.git`
-4. Run the following script from the cloned repository. This will install the all the prerequisites to the EC2 instance. The command to run is: `sudo ./moodle-fileconverter_librelambda/libre/cli/prereq.sh`. You are free to examine this script in this repository to see what it does.
-
-After the above steps are completed follow the instructions in the next section, to get the source code for LibreOffice.
+Following steps are done in the `librelambda/build` directory.
 
 ##### Get the LibreOffice code from the LibreOffice project
 
-1. Run the following script from the cloned repository. This will download the LibreOffice source code. The command to run is: `./moodle-fileconverter_librelambda/libre/cli/getsource.sh`. You are free to examine this script in this repository to see what it does.
+    wget https://download.documentfoundation.org/libreoffice/src/6.4.7/libreoffice-6.4.7.2.tar.xz
 
-After the above steps are completed follow the instructions in the next section, to compile LibreOffice.
+This is the latest version in the 6 family at the time of writing. Amazon 2 image is based on Centos 7,
+which proved challenging enough to make us not even consider trying with LibreOffice 7.
+
+In (unlikely) case that another minor version is requested, `docker build` observes `lo_ver` env var, eg
+    lo_ver=6.4.7.5 docker build ...
 
 ##### Compile LibreOffice binaries
+Build the image and launch a container. Depending on your circumnstances/preferences you may use
+slightly different arguments with `docker` commands:
 
-1. Run the following script from the cloned repository. This will compile the LibreOffice source code and cleanup some non required files. The command to run is: `./moodle-fileconverter_librelambda/libre/cli/compile.sh`. You are free to examine this script in this repository to see what it does.
-2. Once the binaries are compiled you can run the following commands to test the conversion:
+    docker build -t lo-build .
+    docker run -it --rm lo-build bash
 
-```console
-echo "hello world" > a.txt
-./libreoffice/instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard \
---nolockcheck --nologo --norestore --convert-to pdf --outdir $(pwd) a.txt
-```
+This should give you a shell in a running container. In the container shell:
 
-**NOTE:** Compiling LibreOffice will take time. You can increase the compilation speed by choosing an EC2 instance size with more CPU resources. (This will cost more money).
+    make
+    strip instdir/program/*
 
-After the above steps are completed follow the instructions in the next section, to create and download the LibreOffice archive.
+Once the binaries are compiled (and stripped) you can run the following commands (still in the container shell)
+to test the conversion. You will probably get a fontconfig warning, ignore:
 
-##### Create the LibreOffice archive and download it from the EC2
-1. Change to the LibreOffice directory: `cd libreoffice`
-2. Create the archive: `XZ_OPT=-e9 tar cJf ../lo.tar.xz instdir/`
-3. Download the archive to your local machine, using your favorite method.
+    echo "hello world" > /tmp/a.txt
+    ./instdir/program/soffice.bin --headless --invisible --nodefault --nofirststartwizard \
+        --nolockcheck --nologo --norestore --convert-to pdf --outdir /tmp /tmp/a.txt
+    ls -l /tmp/a.pdf
 
-Once you have the archive you can replace the existing archive in this repository at `/libre/lo.tar.xz`.
-Then when you run the provisioning script to setup the environment it will use the newly created LibreLambda archive for Lmabda.
+**Note:** For some reason conversion may silently do nothing. In that case just re-run it.
+
+If everything seems fine, pack it up:
+
+    tar -cf /lo.tar instdir
+
+Now you have lo.tar in the running container. Do not exit it yet. In another terminal on your computer:
+
+    docker ps
+    docker cp <container id>:/lo.tar .
+`docker ps` should give you the id of the `lo-build` running container that you will use for copying.
+
+After checking that you have `lo.tar` you can leave the container.
+
+**NOTE:** Compiling LibreOffice will take time.
+
+**If something goes wrong:**
+
+    docker run -it --rm --cap-add=SYS_PTRACE --security-opt seccomp=unconfined lo-build bash
+
+If you are rebuilding the `lo-build` image, you can copy tarballs from the running container's
+`<build dir>/external/tarballs/` to the `tarballs` directory. That will save you downloading each time you start new container.
+
+After the above steps are completed follow the instructions in the next section, to create the LibreOffice archive.
+
+##### Create the LibreOffice archive
+Now is time to remove unneeded things from lo.tar if you wish
+(share/gallery,template,fonts/truetype/EmojiOneColor-SVGinOT.ttf...). Either untar/remove/tar back, or
+
+    tar -f lo.tar --delete xyz...
+
+Once you are happy with the content of `lo.tar`:
+
+    xz -e9 lo.tar
+
+And replace the existing `lo.tar.xz`:
+
+    mv lo.tar.xz ..
+
+Next time you run the provisioning script to setup the environment it will use the newly created LibreLambda archive for Lambda.
 
 ### Lambda Function
 TODO: this
