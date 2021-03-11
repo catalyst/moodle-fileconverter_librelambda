@@ -40,6 +40,7 @@ use Aws\CloudFormation\Exception\CloudFormationException;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provision {
+    const STACK_NAME = 'LambdaConvertStack';
 
     /**
      * AWS API Access Key ID.
@@ -124,7 +125,7 @@ class provision {
      * Check if the bucket already exists in AWS.
      *
      * @param string $bucketname The name of the bucket to check.
-     * @return boolean $bucketexists The result of the check.
+     * @return bool $bucketexists The result of the check.
      */
     private function check_bucket_exists($bucketname) {
         $bucketexists = true;
@@ -230,15 +231,18 @@ class provision {
         $bucketexists = $this->check_bucket_exists($bucketname);
         if (!$bucketexists) {
             $result = $this->create_s3_bucket($bucketname);
-            $result->bucketname = $bucketname;
+            $result->message = get_string('provision:bucketcreated', 'fileconverter_librelambda', [
+                'bucket' => $bucketname,
+                'location' => $result->message,
+            ]);
         } else {
-            $result->status = false;
-            $result->code = 1;
-            $result->message = get_string('provision:bucketexists', 'fileconverter_librelambda');
+            $result->message = get_string('provision:bucketexists', 'fileconverter_librelambda', [
+                'bucket' => $bucketname,
+            ]);
         }
 
+        $result->bucketname = $bucketname;
         return $result;
-
     }
 
 
@@ -362,103 +366,194 @@ class provision {
         // Setup the Cloudformation client.
         $this->create_cloudformation_client();
 
-        // Create stack.
         $template = file_get_contents($params['templatepath']);
 
-        $stackparams = array(
-            'Capabilities' => array('CAPABILITY_NAMED_IAM'),
-            'OnFailure' => 'DELETE',
-            'Parameters' => array(
-                array(
+        $stackparams = [
+            'Capabilities' => ['CAPABILITY_NAMED_IAM'],
+            'Parameters' => [
+                [
                     'ParameterKey' => 'BucketPrefix',
                     'ParameterValue' => $params['bucketprefix'],
-                ),
-                array(
+                ],
+                [
                     'ParameterKey' => 'ResourceBucket',
                     'ParameterValue' => $params['resourcebucket'],
-                ),
-                array(
+                ],
+                [
                     'ParameterKey' => 'LambdaArchiveKey',
                     'ParameterValue' => $params['lambdaarchive'],
-                ),
-                array(
+                ],
+                [
                     'ParameterKey' => 'LambdaLayerKey',
                     'ParameterValue' => $params['lambdalayer'],
-                ),
-            ),
-            'StackName' => 'LambdaConvertStack', // Required.
+                ],
+            ],
+            'StackName' => self::STACK_NAME, // Required.
             'TemplateBody' => $template,
-        );
+        ];
 
         $client = $this->cloudformationclient;
+        $create = true;
 
-        try {
-            $createstack = $client->createStack($stackparams);
-            $result->message = $createstack['StackId'];
+        // Check for stack.
+        if ($this->stack_status()) {
 
-        } catch (CloudFormationException $e) {
-            $result->status = false;
-            $result->code = $e->getAwsErrorCode();
-            $result->message = $e->getAwsErrorMessage();
+            try {
+                $stackparams['UsePreviousTemplate'] = false;
+                $updatestack = $client->updateStack($stackparams);
+                $result->message = get_string('provision:stackupdated', 'fileconverter_librelambda', $updatestack['StackId']);
+                $create = false;
+
+            } catch (CloudFormationException $e) {
+                $deleteparams = [
+                    'StackName' => self::STACK_NAME,
+                ];
+
+                $client->deleteStack($deleteparams);
+                if ($ready = $this->check_stack_ready(['DELETE_COMPLETE', 'DELETE_FAILED'])) {
+                    list($stackstatus, $outputs) = $ready;
+                    $deleted = ($stackstatus === 'DELETE_COMPLETE');
+                } else {
+                    $deleted = true; // We assume it is gone if there's no status.
+                }
+                if (!$deleted) {
+                    $result->status = false;
+                    $result->code = $stackstatus;
+                    $result->message = 'Stack removal failed. Maybe the buckets are not empty?';
+                    return $result;
+                }
+            }
         }
 
-        if ($result->status == true) {
-            $desctibeparams = array(
-                'StackName' => $result->message,
-            );
+        if ($create) {
+            // Create stack.
+            try {
+                $stackparams['OnFailure'] = 'DELETE';
+                $createstack = $client->createStack($stackparams);
+                $result->message = get_string('provision:stackcreated', 'fileconverter_librelambda', $createstack['StackId']);
 
-            // Stack creation can take several minutes.
-            // Periodically check for stack updates.
-            $timeout = time() + (60 * 5); // Five minute timeout.
-            $exitcodes = array(
-                'CREATE_FAILED',
-                'CREATE_COMPLETE',
-                'DELETE_COMPLETE'
-            );
-            $stackcreated = false;
-
-            // Check stack creation until exit code received,
-            // or we timeout.
-            while (time() < $timeout) {
-                $stackdetails = $client->describeStacks($desctibeparams);
-                $stackdetail = $stackdetails['Stacks'][0];
-                $stackstatus = $stackdetail['StackStatus'];
-
-                echo "Stack status: " . $stackstatus . PHP_EOL;
-
-                // Exit under cetain conditions.
-                if (in_array($stackstatus, $exitcodes)) {
-                    $stackcreated = true;
-                    break;
-                }
-
-                sleep(30);  // Sleep for a bit before rechecking.
-            }
-
-            if ($stackcreated) {
-                foreach ($stackdetail['Outputs'] as $output) {
-                    if ($output['OutputKey'] == 'S3UserAccessKey') {
-                        $result->S3UserAccessKey = $output['OutputValue'];
-                    }
-                    if ($output['OutputKey'] == 'S3UserSecretKey') {
-                        $result->S3UserSecretKey = $output['OutputValue'];
-                    }
-                    if ($output['OutputKey'] == 'InputBucket') {
-                        $result->InputBucket = $output['OutputValue'];
-                    }
-                    if ($output['OutputKey'] == 'OutputBucket') {
-                        $result->OutputBucket = $output['OutputValue'];
-                    }
-                }
-
-            } else {
+            } catch (CloudFormationException $e) {
                 $result->status = false;
-                $result->code = $stackstatus;
-                $result->message = 'Stack creation failed';
+                $result->code = $e->getAwsErrorCode();
+                $result->message = $e->getAwsErrorMessage();
+                return $result;
             }
+        }
 
+        // Stack creation can take several minutes.
+        // Periodically check for stack updates.
+        $exitcodes = [
+            'CREATE_FAILED',
+            'CREATE_COMPLETE',
+            'UPDATE_COMPLETE',
+            'DELETE_COMPLETE'
+        ];
+        if ($ready = $this->check_stack_ready($exitcodes)) {
+            list($stackstatus, $outputs) = $ready;
+
+            if ($stackstatus === 'CREATE_COMPLETE' || $stackstatus === 'UPDATE_COMPLETE') {
+                foreach ($outputs as $output) {
+                    switch ($output['OutputKey']) {
+                        case 'S3UserAccessKey':
+                            $result->S3UserAccessKey = $output['OutputValue'];
+                            break;
+
+                        case 'S3UserSecretKey':
+                            $result->S3UserSecretKey = $output['OutputValue'];
+                            break;
+
+                        case 'InputBucket':
+                            $result->InputBucket = $output['OutputValue'];
+                            break;
+
+                        case 'OutputBucket':
+                            $result->OutputBucket = $output['OutputValue'];
+                            break;
+                    }
+                }
+            } else {
+                $ready = null;
+            }
+        }
+
+        if (!$ready) {
+            $result->status = false;
+            $result->code = $stackstatus;
+            $result->message = 'Stack creation failed';
         }
 
         return $result;
+    }
+
+    /**
+     * Check stack ready
+     *
+     * @param array $statuses List of acceptable statuses
+     * @return array|null [$status, $outputs]
+     */
+    private function check_stack_ready($statuses) {
+        $client = $this->cloudformationclient;
+
+        // Check stack status until acceptable code received,
+        // or we timeout in 5 mins.
+        for ($i = 0; $i < 10; $i++) {
+            $res = $this->check_stack();
+            if ($res === null) {
+                return;
+            }
+
+            list ($stackstatus, $outputs) = $res;
+
+            // Exit under cetain conditions.
+            if (in_array($stackstatus, $statuses, true)) {
+                return $res;
+            }
+
+            sleep(30);  // Sleep for a bit before rechecking.
+        }
+    }
+
+    /**
+     * Stack status
+     *
+     * @return string|null
+     */
+    private function stack_status() {
+        $res = $this->check_stack();
+        if ($res === null) {
+            return;
+        }
+
+        list ($stackstatus, $outputs) = $res;
+        return $stackstatus;
+    }
+
+    /**
+     * Check stack
+     *
+     * @return array|null [$status, $outputs]
+     */
+    private function check_stack() {
+        $client = $this->cloudformationclient;
+
+        $describeparams = [
+            'StackName' => self::STACK_NAME,
+        ];
+
+        try {
+            $stackdetails = $client->describeStacks($describeparams);
+        } catch (CloudFormationException $e) {
+            return;
+        }
+
+        $stacks = $stackdetails['Stacks'];
+        if (count($stacks) != 1) {
+            return;
+        }
+        $stackdetail = $stacks[0];
+        $stackstatus = $stackdetail['StackStatus'];
+
+        echo "Stack status: " . $stackstatus . PHP_EOL;
+        return [$stackstatus, $stackdetail['Outputs']];
     }
 }
