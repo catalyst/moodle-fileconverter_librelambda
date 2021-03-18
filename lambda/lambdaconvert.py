@@ -30,6 +30,7 @@ s3_client = boto3.client('s3')
 logger = logging.getLogger()
 
 INSTDIR = '/tmp/instdir'
+SOFFICE = INSTDIR + '/program/soffice.bin'  # Libre conversion executable.
 CONFDIR = INSTDIR + '/user/config'
 FONTDIR = INSTDIR + '/share/fonts'
 
@@ -55,7 +56,7 @@ def get_libreoffice():
     """
 
     # Only get Libre Office if this is a cold start and we don't arleady have it.
-    if not os.path.exists(INSTDIR + '/program/soffice'):
+    if not os.path.exists(SOFFICE):
         logger.info('Downloading and extracting Libre Office')
         with tarfile.open(name='/opt/lo.tar.xz', mode="r|xz") as archive:
             archive.extractall('/tmp')  # Extract to the temp directory of Lambda.
@@ -92,7 +93,7 @@ def convert_file(filepath, targetformat):
     Return the path of the converted document/
     """
     commandargs = [
-        INSTDIR + "/program/soffice.bin",  # Libre conversion executable.
+        SOFFICE,
         "--headless",
         "--invisible",
         "--nodefault",

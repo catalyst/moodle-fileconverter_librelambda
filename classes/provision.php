@@ -394,6 +394,7 @@ class provision {
 
         $client = $this->cloudformationclient;
         $create = true;
+        $check_retries = 10;
 
         // Check for stack.
         if ($this->stack_status()) {
@@ -403,6 +404,7 @@ class provision {
                 $updatestack = $client->updateStack($stackparams);
                 $result->message = get_string('provision:stackupdated', 'fileconverter_librelambda', $updatestack['StackId']);
                 $create = false;
+                $check_retries = 20;
 
             } catch (CloudFormationException $e) {
                 $deleteparams = [
@@ -448,28 +450,35 @@ class provision {
             'UPDATE_COMPLETE',
             'DELETE_COMPLETE'
         ];
-        if ($ready = $this->check_stack_ready($exitcodes)) {
+        if ($ready = $this->check_stack_ready($exitcodes, $check_retries)) {
             list($stackstatus, $outputs) = $ready;
 
             if ($stackstatus === 'CREATE_COMPLETE' || $stackstatus === 'UPDATE_COMPLETE') {
-                foreach ($outputs as $output) {
-                    switch ($output['OutputKey']) {
-                        case 'S3UserAccessKey':
-                            $result->S3UserAccessKey = $output['OutputValue'];
-                            break;
+                if ($outputs) {
+                    foreach ($outputs as $output) {
+                        switch ($output['OutputKey']) {
+                            case 'S3UserAccessKey':
+                                $result->S3UserAccessKey = $output['OutputValue'];
+                                break;
 
-                        case 'S3UserSecretKey':
-                            $result->S3UserSecretKey = $output['OutputValue'];
-                            break;
+                            case 'S3UserSecretKey':
+                                $result->S3UserSecretKey = $output['OutputValue'];
+                                break;
 
-                        case 'InputBucket':
-                            $result->InputBucket = $output['OutputValue'];
-                            break;
+                            case 'InputBucket':
+                                $result->InputBucket = $output['OutputValue'];
+                                break;
 
-                        case 'OutputBucket':
-                            $result->OutputBucket = $output['OutputValue'];
-                            break;
+                            case 'OutputBucket':
+                                $result->OutputBucket = $output['OutputValue'];
+                                break;
+                        }
                     }
+                } else {
+                    $result->status = false;
+                    $result->code = $stackstatus;
+                    $result->message = 'No stack details';
+                    return $result;
                 }
             } else {
                 $ready = null;
@@ -491,12 +500,12 @@ class provision {
      * @param array $statuses List of acceptable statuses
      * @return array|null [$status, $outputs]
      */
-    private function check_stack_ready($statuses) {
+    private function check_stack_ready($statuses, $retries=10) {
         $client = $this->cloudformationclient;
 
         // Check stack status until acceptable code received,
         // or we timeout in 5 mins.
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < $retries; $i++) {
             $res = $this->check_stack();
             if ($res === null) {
                 return;
@@ -554,6 +563,6 @@ class provision {
         $stackstatus = $stackdetail['StackStatus'];
 
         echo "Stack status: " . $stackstatus . PHP_EOL;
-        return [$stackstatus, $stackdetail['Outputs']];
+        return [$stackstatus, isset($stackdetail['Outputs']) ? $stackdetail['Outputs'] : null];
     }
 }
