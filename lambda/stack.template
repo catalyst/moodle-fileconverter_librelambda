@@ -112,6 +112,15 @@ Resources:
     Properties:
       BucketName: !Join [ '-', [!Ref BucketPrefix, 'input'] ]
       AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - BucketKeyEnabled: true
+      LifecycleConfiguration:
+        Rules:
+        - Status: Enabled
+          Transitions:
+          - StorageClass: INTELLIGENT_TIERING
+            TransitionInDays: '0'      
       NotificationConfiguration:
         LambdaConfigurations:
         - Event: 's3:ObjectCreated:*'
@@ -121,6 +130,15 @@ Resources:
     Properties:
       BucketName: !Join [ '-', [!Ref BucketPrefix, 'output'] ]
       AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - BucketKeyEnabled: true
+      LifecycleConfiguration:
+        Rules:
+        - Status: Enabled
+          Transitions:
+          - StorageClass: INTELLIGENT_TIERING
+            TransitionInDays: '0'
   S3User:
     Type: AWS::IAM::User
     Properties:
