@@ -104,30 +104,99 @@ The `--set-config` option will automatically set the plugin settings in Moodle b
 The script will return output similar to, the following:
 
 ```console
-
-== Creating resource S3 Bucket ==
-Created input bucket, at location http://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.amazonaws.com/
-
-== Uploading Libre Office archive to resource S3 bucket ==
-Libreoffice archive uploaded successfully to: https://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.ap-southeast-2.amazonaws.com/lo.tar.xz
-
-== Uploading Lambda archive to resource S3 bucket ==
-Lambda function archive uploaded successfully to: https://ee27c5ac168fafae77a15bb7e60d6af0-resource.s3.ap-southeast-2.amazonaws.com/lambdaconvert.zip
-
 == Provisioning the Lambda function and stack resources ==
 Stack status: CREATE_IN_PROGRESS
 Stack status: CREATE_IN_PROGRESS
 Stack status: CREATE_IN_PROGRESS
 Stack status: CREATE_COMPLETE
-Cloudformation stack created. Stack ID is: arn:aws:cloudformation:ap-southeast-2:693620471840:stack/LambdaConvertStack/4d609630-2760-11e9-b6a5-02181cf5d610
+Cloudformation stack created. Stack ID is: arn:aws:cloudformation:ap-southeast-2:693620471840:stack/LambdaConvert/4d609630-2760-11e9-b6a5-02181cf5d610
 
-== Provisioning the Lambda function and stack resources ==
+== Converter params ==
 S3 user access key: AKIAI6TYTAIFC6GVUJYQ
 S3 user secret key: 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
-Input Bucket: ee27c5ac168fafae77a15bb7e60d6af0-input
-Output Bucket: ee27c5ac168fafae77a15bb7e60d6af0-output
+Input Bucket: lambdaconvert-input
+Output Bucket: lambdaconvert-output
 == Setting plugin configuration in Moodle, from returned settings. ==
 ```
+
+What is created in AWS land:
+
+  * A resource bucket with libreoffice conversion binary and python script that lambda executes
+  * A stack with:
+    + input and output bucket
+    + a lambda function that is executed on upload to input bucket
+    + a user and a set of roles/policies to govern execution and access permissions
+    + a par of secret/access keys
+
+### Multiple stacks
+
+The provisioning script creates a stack with the default name of LambdaConvert. If you need to give it a different name, or want multple stacks, there's `--stack-name` option, eg:
+
+```console
+sudo -u www-data php files/converter/librelambda/cli/provision.php \
+--keyid=<keyid> \
+--secret=<secretkey> \
+--region=<region> \
+--stack-name=LambdaConvertTest
+--set-config
+```
+
+### Updating (reprovisioning)
+
+Running the provision script again will replace (reprovision) the stack.
+
+In order to avoid accidental overwriting, `--replace-stack` option must be given when updating:
+
+```console
+sudo -u www-data php files/converter/librelambda/cli/provision.php \
+--keyid=<keyid> \
+--secret=<secretkey> \
+--region=<region> \
+--set-config
+
+Stack status: CREATE_COMPLETE
+Stack exsists and replacement not requested.
+If you want to replace the stack use "--replace-stack" option
+
+...
+
+sudo -u www-data php files/converter/librelambda/cli/provision.php \
+--keyid=<keyid> \
+--secret=<secretkey> \
+--region=<region> \
+--replace-stack
+--set-config
+
+== Provisioning the Lambda function and stack resources ==
+...
+```
+
+### Stack removal
+
+Stack can be remoced with `--remove-stack` option.
+
+```console
+sudo -u www-data php files/converter/librelambda/cli/provision.php \
+--keyid=<keyid> \
+--secret=<secretkey> \
+--region=<region> \
+--remove-stack
+
+Stack status: CREATE_COMPLETE
+Do you really want to remove "LambdaConvert" stack? [Type "yes" to confirm]:
+
+yes[ENTER]
+
+Stack status: DELETE_IN_PROGRESS
+Removed
+```
+
+### Common errors
+#### Removing non-empty bucket
+Buckets that are not empty cannot be removed. This error may occur when removing stack,
+or updating stack - sometimes stack won't update, in which case we do remove/create.
+
+This error will be visibly reported.
 
 ## Plugin Setup
 
