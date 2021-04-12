@@ -127,7 +127,7 @@ class tester {
             // Check the error code. If code = 403, this means the bucket
             // exists but we can't access it.  Need to know either way.
             $errorcode = $e->getAwsErrorCode();
-            if ($errorcode != 403) {
+            if ($errorcode == 'NotFound') {
                 $bucketexists = false;
             }
 

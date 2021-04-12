@@ -49,9 +49,9 @@ if ($unrecognized) {
     $unrecognized = implode("\n  ", $unrecognized);
     cli_error(get_string('cliunknowoption', 'admin', $unrecognized));
 }
-$help = "Command line Librelmbda provision.
-This command line script will provision the Librelambda environment in AWS.
-It will setup the input and output buckets as well as the Lambda function in S3.
+$help = "Command line Librelmbda test.
+This command line script will push a file to the Librelambda input bucket in AWS,
+and check the converted file in the output bucket.
 If you set use-sdk-creds=1, It will use credential set in AWS Credentials File.
 (https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials_profiles.html)
 
