@@ -31,6 +31,7 @@ use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
 use Aws\CloudFormation\CloudFormationClient;
 use Aws\CloudFormation\Exception\CloudFormationException;
+use Aws\Exception\AwsException;
 
 /**
  * Class for provisioning AWS resources.
@@ -40,7 +41,8 @@ use Aws\CloudFormation\Exception\CloudFormationException;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provision {
-    const STACK_NAME = 'LambdaConvertStack';
+    const DEFAULT_STACK_NAME = 'LambdaConvert';
+    const MAX_BUCKET_PREFIX_LEN = 52;
 
     /**
      * AWS API Access Key ID.
@@ -64,23 +66,45 @@ class provision {
     protected $region;
 
     /**
-     * The prefix to use for the created AWS S3 buckets.
+     * The prefix to use for the created AWS S3 buckets - only lower cases are allowed.
      *
      * @var string
      */
     protected $bucketprefix;
 
     /**
+     * The AWS stack name
      *
-     * @var \Aws\S3\S3Client S3 client.
+     * @var string
      */
-    private $s3client;
+    protected $stack;
+
+    /**
+     * The AWS resource bucket name
+     *
+     * @var string
+     */
+    protected $resourcebucket;
+
+    /**
+     * S3 client.
+     *
+     * @var S3Client
+     */
+    protected $s3client;
+
+    /**
+     * Cloud client.
+     *
+     * @var CloudFormationClient
+     */
+    protected $cloudformationclient;
 
     /**
      *
-     * @var \Aws\Lambda\LambdaClient Lambda client.
+     * @var int
      */
-    private $cloudformationclient;
+    protected static $sleepbeforecheck = 5;
 
     /**
      * @var bool whether we should use a proxy.
@@ -90,68 +114,52 @@ class provision {
     /**
      * The constructor for the class
      *
-     * @param string $keyid AWS API Access Key ID.
+     * @param string $keyid  AWS API Access Key ID.
      * @param string $secret AWS API Secret Access Key.
-     * @param string $region The AWS region to create the environment in.
-     * @param string $bucketprefix The prefix to use for the created AWS S3 buckets.
+     * @param string $region AWS Region to create the environment in.
+     * @param string $stack  AWS Stack name
      */
-    public function __construct($keyid, $secret, $region, $bucketprefix) {
+    public function __construct($keyid, $secret, $region, $stack=null) {
         global $CFG;
 
         $this->keyid = $keyid;
         $this->secret = $secret;
         $this->region = $region;
 
-        if ($bucketprefix == '') {
-            $this->bucketprefix = md5($CFG->siteidentifier);
-        } else {
-            $this->bucketprefix = $bucketprefix;
-        }
+        $this->stack = $stack ? $stack : self::DEFAULT_STACK_NAME;
+        $ps = '-' . md5($CFG->siteidentifier);
+        $this->bucketprefix = substr(
+            strtolower($this->stack),
+            0,
+            self::MAX_BUCKET_PREFIX_LEN - strlen($this->stack)
+        ) . $ps;
+        $this->resourcebucket = $this->bucketprefix . '-resource';
 
         $this->useproxy = get_config('fileconverter_librelambda', 'useproxy');
 
+        // Setup the S3 client.
+        $this->s3client = $this->create_s3_client();
+
+        // Setup the Cloudformation client.
+        $this->cloudformationclient = $this->create_cloudformation_client();
     }
 
     /**
-     * Get the S3 bucket prefix.
+     * Stack name.
      *
-     * @return string The bucket prefix.
+     * @return string $stack
      */
-    public function get_bucket_prefix() {
-        return $this->bucketprefix;
+    public function stack_name() {
+        return $this->stack;
     }
 
     /**
-     * Check if the bucket already exists in AWS.
-     *
-     * @param string $bucketname The name of the bucket to check.
-     * @return bool $bucketexists The result of the check.
-     */
-    private function check_bucket_exists($bucketname) {
-        $bucketexists = true;
-
-        try {
-            $this->s3client->headBucket(array('Bucket' => $bucketname));
-        } catch (S3Exception $e) {
-            // Check the error code. If code = 403, this means the bucket
-            // exists but we can't access it.  Need to know either way.
-            $errorcode = $e->getAwsErrorCode();
-            if ($errorcode != 403) {
-                $bucketexists = false;
-            }
-
-        }
-        return $bucketexists;
-    }
-
-
-    /**
-     * Create AWS S3 API client.
+     * Create a AWS S3 API client.
      *
      * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
      */
-    public function create_s3_client($handler=null) {
+    protected function create_s3_client($handler=null) {
         $connectionoptions = array(
                 'version' => 'latest',
                 'region' => $this->region,
@@ -170,158 +178,100 @@ class provision {
             $connectionoptions['handler'] = $handler;
         }
 
-        // Only create client if it hasn't already been done.
-        if ($this->s3client == null) {
-            $this->s3client = new S3Client($connectionoptions);
-        }
-
-        return $this->s3client;
+        return new S3Client($connectionoptions);
     }
 
 
     /**
-     * Create an S3 Bucket in AWS.
+     * Create the S3 resource bucket.
      *
-     * @param string $bucketname The name to use for the S3 bucket.
-     * @return \stdClass $result The result of the bucket creation.
+     * @return void
+     * @throws S3Exception
      */
-    private function create_s3_bucket($bucketname) {
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
+    protected function create_resource_bucket() {
         try {
-            $s3result = $this->s3client->createBucket(array(
+            $this->s3client->headBucket(
+                ['Bucket' => $this->resourcebucket]
+            );
+        } catch (S3Exception $e) {
+            // Check the error code. If code = NotFound, this means the bucket
+            // does not exists, so we create it.
+            if ($e->getAwsErrorCode() == 'NotFound') {
+                $this->s3client->createBucket([
                     'ACL' => 'private',
-                    'Bucket' => $bucketname, // Required.
-                    'CreateBucketConfiguration' => array(
-                            'LocationConstraint' => $this->region,
-                    ),
-            ));
-            $result->message = $s3result['Location'];
-        } catch (S3Exception $e) {
-            $result->status = false;
-            $result->code = $e->getAwsErrorCode();
-            $result->message = $e->getAwsErrorMessage();
-        }
+                    'Bucket' => $this->resourcebucket,
+                    'CreateBucketConfiguration' => ['LocationConstraint' => $this->region],
+                ]);
 
-        return $result;
+                return;
+            }
+
+            // Otherwise rethrow.
+            throw $e;
+        }
     }
 
     /**
-     * Creates a S3 bucket in AWS.
+     * Remove the S3 resource bucket.
      *
-     * @param string $suffix The bucket suffix to use.
-     *
+     * @return void
+     * @throws S3Exception
      */
-    public function create_bucket($suffix) {
-        $bucketname = $this->bucketprefix . '-' . $suffix;
-
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
-        $result->bucketname = $bucketname;
-
-        // Setup the S3 client.
-        $this->create_s3_client();
-
-        // Check bucket exists.
-        // If not create it.
-        $bucketexists = $this->check_bucket_exists($bucketname);
-        if (!$bucketexists) {
-            $result = $this->create_s3_bucket($bucketname);
-            $result->message = get_string('provision:bucketcreated', 'fileconverter_librelambda', [
-                'bucket' => $bucketname,
-                'location' => $result->message,
-            ]);
-        } else {
-            $result->message = get_string('provision:bucketexists', 'fileconverter_librelambda', [
-                'bucket' => $bucketname,
-            ]);
+    protected function remove_resource_bucket() {
+        $s3result = $this->s3client->listObjects([
+            'Bucket' => $this->resourcebucket
+        ]);
+        // If the bucket is not empty - empty it.
+        if ($contents = $s3result['Contents']) {
+            $objects = array_map(function ($c) { return $c['Key']; }, $contents);
+            $args = [
+                'Bucket' => $this->resourcebucket,
+                'Delete' => [
+                    'Objects' => array_map(function ($o) { return ['Key' => $o]; }, $objects),
+                ],
+            ];
+            $s3result = $this->s3client->deleteObjects($args);
+            if (count($s3result['Deleted']) < count($contents)) {
+                $e = $s3result['Errors'][0];
+                // Upgrade to exception.
+                throw new S3Exception(
+                    $e['Message'],
+                    $this->s3client->getCommand('DeleteObjects', $args)
+                );
+            }
         }
 
-        $result->bucketname = $bucketname;
-        return $result;
-    }
-
-
-    /**
-     * Put file into S3 bucket.
-     *
-     * @param string $filepath The path to the local file to Put.
-     * @param string $bucketname Te name of the bucket to use.
-     * @return \stdClass $result The result of the Put operation.
-     */
-    private function bucket_put_object($filepath, $bucketname) {
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
-
-        $client = $this->s3client;
-        $fileinfo = pathinfo($filepath);
-
-        $uploadparams = array(
-            'Bucket' => $bucketname, // Required.
-            'Key' => $fileinfo['basename'], // Required.
-            'SourceFile' => $filepath, // Required.
-            'Metadata' => array(
-                'description' => 'This is the Libreoffice archive.',
-            )
-        );
-
-        try {
-            $putobject = $client->putObject($uploadparams);
-            $result->message = $putobject['ObjectURL'];
-
-        } catch (S3Exception $e) {
-            $result->status = false;
-            $result->code = $e->getAwsErrorCode();
-            $result->message = $e->getAwsErrorMessage();
-        }
-
-        return $result;
+        $this->s3client->deleteBucket([
+            'Bucket' => $this->resourcebucket
+        ]);
     }
 
     /**
-     * Uploads a file to the S3 input bucket.
+     * Uploads a file to the S3 resource bucket.
      *
      * @param string $filepath The path to the file to upload.
-     * @param string $bucketname Te name of the bucket to use.
-     * @return \stdClass $result The result of the Put operation.
+     * @return string $url uploaded file url.
+     * @throws S3Exception
      */
-    public function upload_file($filepath, $bucketname) {
-        $result = new \stdClass();
-        $result->status = true;
-        $result->code = 0;
-        $result->message = '';
+    protected function upload_resource($filepath) {
+        $fileinfo = pathinfo($filepath);
+        $uploadparams = array(
+            'Bucket' => $this->resourcebucket,
+            'Key' => $fileinfo['basename'],
+            'SourceFile' => $filepath,
+        );
 
-        // Setup the S3 client.
-        $this->create_s3_client();
-
-        // Check input bucket exists.
-        $bucketexists = $this->check_bucket_exists($bucketname);
-        if ($bucketexists) {
-            // If we have bucket, upload file.
-            $result = $this->bucket_put_object($filepath, $bucketname);
-        } else {
-            $result->status = false;
-            $result->code = 1;
-            $result->message = get_string('test:bucketnotexists', 'fileconverter_librelambda', 'input');
-        }
-
-        return $result;
-
+        $putobject = $this->s3client->putObject($uploadparams);
+        return $putobject['ObjectURL'];
     }
 
     /**
-     * Create and AWS Cloudformation API client.
+     * Create a AWS Cloudformation API client.
      *
      * @param \GuzzleHttp\Handler $handler Optional handler.
-     * @return \Aws\CloudFormation\CloudFormationClient The create Cloudformation client.
+     * @return \Aws\CloudFormation\CloudFormationClient
      */
-    public function create_cloudformation_client($handler=null) {
+    protected function create_cloudformation_client($handler=null) {
         $connectionoptions = array(
             'version' => 'latest',
             'region' => $this->region,
@@ -340,184 +290,236 @@ class provision {
             $connectionoptions['handler'] = $handler;
         }
 
-        // Only create client if it hasn't already been done.
-        if ($this->cloudformationclient == null) {
-            $this->cloudformationclient = new CloudFormationClient($connectionoptions);
-        }
-
-        return $this->cloudformationclient;
+        return new CloudFormationClient($connectionoptions);
     }
 
     /**
-     * Use cloudformation to create the "stack" in AWS.
-     * The stack creation creates the input and output S3 buckets,
-     * the required roles and user permisions, and the Lmabda function
-     * to convert documents.
+     * Provision lambda stack and the resources.
      *
-     * @param array $params The params to create the stack with.
-     * @return \stdClass $result The result of stack creation.
+     * @param string $templatepath Stack template path.
+     * @param array  $resources    Files to upload to the rtesource bucket.
+     * @param bool   $replace      If the stack already exists replace it.
+     * @return \stdClass $result The result of the stack creation.
      */
-    public function create_stack($params) {
+    public function provision_stack($templatepath, $resources, $replace) {
         $result = new \stdClass();
         $result->status = true;
-        $result->code = 0;
         $result->message = '';
 
-        // Setup the Cloudformation client.
-        $this->create_cloudformation_client();
-
-        $template = file_get_contents($params['templatepath']);
-
-        $stackparams = [
-            'Capabilities' => ['CAPABILITY_NAMED_IAM'],
-            'Parameters' => [
-                [
-                    'ParameterKey' => 'BucketPrefix',
-                    'ParameterValue' => $params['bucketprefix'],
-                ],
-                [
-                    'ParameterKey' => 'ResourceBucket',
-                    'ParameterValue' => $params['resourcebucket'],
-                ],
-                [
-                    'ParameterKey' => 'LambdaArchiveKey',
-                    'ParameterValue' => $params['lambdaarchive'],
-                ],
-                [
-                    'ParameterKey' => 'LambdaLayerKey',
-                    'ParameterValue' => $params['lambdalayer'],
-                ],
-            ],
-            'StackName' => self::STACK_NAME, // Required.
-            'TemplateBody' => $template,
-        ];
-
-        $client = $this->cloudformationclient;
-        $create = true;
-        $check_retries = 10;
-
-        // Check for stack.
-        if ($this->stack_status()) {
-
-            try {
-                $stackparams['UsePreviousTemplate'] = false;
-                $updatestack = $client->updateStack($stackparams);
-                $result->message = get_string('provision:stackupdated', 'fileconverter_librelambda', $updatestack['StackId']);
-                $create = false;
-                $check_retries = 20;
-
-            } catch (CloudFormationException $e) {
-                $deleteparams = [
-                    'StackName' => self::STACK_NAME,
-                ];
-
-                $client->deleteStack($deleteparams);
-                if ($ready = $this->check_stack_ready(['DELETE_COMPLETE', 'DELETE_FAILED'])) {
-                    list($stackstatus, $outputs) = $ready;
-                    $deleted = ($stackstatus === 'DELETE_COMPLETE');
-                } else {
-                    $deleted = true; // We assume it is gone if there's no status.
-                }
-                if (!$deleted) {
-                    $result->status = false;
-                    $result->code = $stackstatus;
-                    $result->message = 'Stack removal failed. Maybe the buckets are not empty?';
-                    return $result;
-                }
-            }
-        }
-
-        if ($create) {
-            // Create stack.
-            try {
-                $stackparams['OnFailure'] = 'DELETE';
-                $createstack = $client->createStack($stackparams);
-                $result->message = get_string('provision:stackcreated', 'fileconverter_librelambda', $createstack['StackId']);
-
-            } catch (CloudFormationException $e) {
+        if ($exists = $this->stack_status()) {
+            if (!$replace) {
                 $result->status = false;
-                $result->code = $e->getAwsErrorCode();
-                $result->message = $e->getAwsErrorMessage();
+                $result->message = 'Stack exsists and replacement not requested';
                 return $result;
             }
         }
+
+        $template = str_replace(
+            '__STACK__', $this->stack,
+            file_get_contents($templatepath)
+        );
+        $template = str_replace(
+            '__BUCKET_PREFIX__', $this->bucketprefix,
+            $template
+        );
+
+        try {
+            $this->create_resource_bucket();
+            foreach ($resources as $r) {
+                $this->upload_resource($r);
+            }
+
+            if ($exists) {
+                list($stackid, $outputs) = $this->update_stack($template);
+                $result->message = get_string('provision:stackupdated', 'fileconverter_librelambda', $stackid);
+            } else {
+                list($stackid, $outputs) = $this->create_stack($template);
+                $result->message = get_string('provision:stackcreated', 'fileconverter_librelambda', $stackid);
+            }
+
+            return (object) array_merge((array) $result, $outputs);
+
+        } catch (AwsException $e) {
+            $result->status = false;
+            $result->message = $e->getMessage() . ": " . $e->getAwsErrorMessage();
+            return $result;
+        }
+    }
+
+    /**
+     * Use CloudFormation to create the stack in AWS.
+     * The stack template specifies the input and output S3 buckets,
+     * the required roles and user permisions, and the Lambda function
+     * to convert documents.
+     *
+     * @param string $template Stack template
+     * @return string $stackid
+     * @throws CloudFormationException
+     */
+    protected function create_stack($template) {
+        $stackparams = [
+            'Capabilities' => ['CAPABILITY_NAMED_IAM'],
+            'StackName' => $this->stack,
+            'TemplateBody' => $template,
+            'OnFailure' => 'DELETE',
+        ];
+
+        $createstack = $this->cloudformationclient->createStack($stackparams);
+        sleep(static::$sleepbeforecheck);
 
         // Stack creation can take several minutes.
         // Periodically check for stack updates.
         $exitcodes = [
             'CREATE_FAILED',
             'CREATE_COMPLETE',
-            'UPDATE_COMPLETE',
-            'DELETE_COMPLETE'
+            'DELETE_COMPLETE',
+            'ROLLBACK_COMPLETE'
         ];
-        if ($ready = $this->check_stack_ready($exitcodes, $check_retries)) {
+        if ($ready = $this->check_stack_ready($exitcodes)) {
             list($stackstatus, $outputs) = $ready;
 
-            if ($stackstatus === 'CREATE_COMPLETE' || $stackstatus === 'UPDATE_COMPLETE') {
-                if ($outputs) {
-                    foreach ($outputs as $output) {
-                        switch ($output['OutputKey']) {
-                            case 'S3UserAccessKey':
-                                $result->S3UserAccessKey = $output['OutputValue'];
-                                break;
-
-                            case 'S3UserSecretKey':
-                                $result->S3UserSecretKey = $output['OutputValue'];
-                                break;
-
-                            case 'InputBucket':
-                                $result->InputBucket = $output['OutputValue'];
-                                break;
-
-                            case 'OutputBucket':
-                                $result->OutputBucket = $output['OutputValue'];
-                                break;
-                        }
-                    }
-                } else {
-                    $result->status = false;
-                    $result->code = $stackstatus;
-                    $result->message = 'No stack details';
-                    return $result;
-                }
-            } else {
-                $ready = null;
+            if ($stackstatus === 'CREATE_COMPLETE') {
+                return [$createstack['StackId'], $outputs];
             }
         }
 
-        if (!$ready) {
+        // Not COMPLETE - throw an exception.
+        throw new CloudFormationException(
+            "Stack creation failed",
+            $this->cloudformationclient->getCommand('CreateStack', $stackparams)
+        );
+    }
+
+    /**
+     * Use CloudFormation to update the stack in AWS.
+     * Sometimes AWS cannot see the change, and refuses to update. In that case
+     * we delete/create.
+     *
+     * @param string $template Stack template
+     * @return string $stackid
+     * @throws CloudFormationException
+     */
+    protected function update_stack($template) {
+        $stackparams = [
+            'Capabilities' => ['CAPABILITY_NAMED_IAM'],
+            'StackName' => $this->stack,
+            'TemplateBody' => $template,
+            'UsePreviousTemplate' => false,
+        ];
+
+        try {
+            $updatestack = $this->cloudformationclient->updateStack($stackparams);
+        } catch (CloudFormationException $e) {
+            $this->delete_stack();
+            return $this->create_stack($template);
+        }
+        sleep(static::$sleepbeforecheck);
+
+        // Stack update can take several minutes.
+        // Periodically check for stack updates.
+        $exitcodes = [
+            'UPDATE_FAILED',
+            'UPDATE_COMPLETE',
+            'ROLLBACK_COMPLETE'
+        ];
+        if ($ready = $this->check_stack_ready($exitcodes)) {
+            list($stackstatus, $outputs) = $ready;
+
+            if ($stackstatus === 'UPDATE_COMPLETE') {
+                return [$updatestack['StackId'], $outputs];
+            }
+        }
+
+        // Not COMPLETE - throw an exception.
+        throw new CloudFormationException(
+            "Stack update failed",
+            $this->cloudformationclient->getCommand('UpdateStack', $stackparams)
+        );
+    }
+
+    /**
+     * Remove the stack and the resources from AWS.
+     *
+     * @return void
+     * @return \stdClass $result The result of stack removal.
+     */
+    public function remove_stack() {
+        $result = new \stdClass();
+        $result->status = true;
+        $result->message = '';
+
+        try {
+            if ($stackstatus = $this->stack_status()) {
+                $this->delete_stack();
+            }
+
+            $this->remove_resource_bucket();
+        } catch (AwsException $e) {
             $result->status = false;
-            $result->code = $stackstatus;
-            $result->message = 'Stack creation failed';
+            $result->message = $e->getMessage() . ": " . $e->getAwsErrorMessage();
         }
 
         return $result;
     }
 
     /**
+     * Use CloudFormation to remove the stack from AWS.
+     *
+     * @return void
+     * @throws CloudFormationException
+     */
+    protected function delete_stack() {
+        $deleteparams = [
+            'StackName' => $this->stack,
+        ];
+
+        $this->cloudformationclient->deleteStack($deleteparams);
+        sleep(static::$sleepbeforecheck);
+
+        if ($ready = $this->check_stack_ready(['DELETE_COMPLETE', 'DELETE_FAILED'])) {
+            list($stackstatus, $outputs) = $ready;
+            $deleted = ($stackstatus === 'DELETE_COMPLETE');
+        } else {
+            $deleted = true; // We assume it is gone if there's no status.
+        }
+        if (!$deleted) {
+            // Not deleted - throw an exception.
+            throw new CloudFormationException(
+                "Stack removal failed. Maybe the buckets are not empty?",
+                $this->cloudformationclient->getCommand('DeleteObjects', $deleteparams)
+            );
+        }
+    }
+
+    /**
      * Check stack ready
      *
-     * @param array $statuses List of acceptable statuses
+     * @param array $statuses List of terminal statuses
      * @return array|null [$status, $outputs]
      */
-    private function check_stack_ready($statuses, $retries=10) {
-        $client = $this->cloudformationclient;
-
+    private function check_stack_ready($statuses) {
         // Check stack status until acceptable code received,
-        // or we timeout in 5 mins.
-        for ($i = 0; $i < $retries; $i++) {
+        // or we timeout in 5 mins. We shortcut the process after
+        // so many "no stack" responses.
+        $maxnull = 3;
+        for ($i = 0, $n = 0; $i < 10; $i++) {
             $res = $this->check_stack();
             if ($res === null) {
-                return;
+                $n++;
+                if ($n > $maxnull) {
+                    return;
+                }
+                continue;
             }
 
             list ($stackstatus, $outputs) = $res;
 
-            // Exit under cetain conditions.
+            // Exit in case terminal status is reported.
             if (in_array($stackstatus, $statuses, true)) {
                 return $res;
             }
 
+            echo "Stack status: " . $stackstatus . PHP_EOL;
             sleep(30);  // Sleep for a bit before rechecking.
         }
     }
@@ -527,7 +529,7 @@ class provision {
      *
      * @return string|null
      */
-    private function stack_status() {
+    public function stack_status() {
         $res = $this->check_stack();
         if ($res === null) {
             return;
@@ -543,14 +545,12 @@ class provision {
      * @return array|null [$status, $outputs]
      */
     private function check_stack() {
-        $client = $this->cloudformationclient;
-
         $describeparams = [
-            'StackName' => self::STACK_NAME,
+            'StackName' => $this->stack,
         ];
 
         try {
-            $stackdetails = $client->describeStacks($describeparams);
+            $stackdetails = $this->cloudformationclient->describeStacks($describeparams);
         } catch (CloudFormationException $e) {
             return;
         }
@@ -562,7 +562,13 @@ class provision {
         $stackdetail = $stacks[0];
         $stackstatus = $stackdetail['StackStatus'];
 
-        echo "Stack status: " . $stackstatus . PHP_EOL;
-        return [$stackstatus, isset($stackdetail['Outputs']) ? $stackdetail['Outputs'] : null];
+        $out = [];
+        if (isset($stackdetail['Outputs'])) {
+            foreach ($stackdetail['Outputs'] as $output) {
+                $out[$output['OutputKey']] = $output['OutputValue'];
+            }
+        }
+
+        return [$stackstatus, $out];
     }
 }

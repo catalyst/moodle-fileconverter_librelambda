@@ -32,7 +32,81 @@ use Aws\MockHandler;
 use Aws\CommandInterface;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
-use Aws\Iam\Exception\IamException;
+use Aws\CloudFormation\Exception\CloudFormationException;
+
+/**
+ * Mock class to test for Libre Lambda AWS provision.
+ *
+ * @package     fileconverter_librelambda
+ * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class mock_provision extends \fileconverter_librelambda\provision {
+    /**
+     *
+     * @var MockHandler
+     */
+    public $mocks3handler;
+
+    /**
+     *
+     * @var MockHandler
+     */
+    public $mockcloudformationhandler;
+
+    /**
+     *
+     * @var int
+     */
+    protected static $sleepbeforecheck = 0;
+
+    /**
+     *
+     * @var string
+     */
+    public $resourcebucket;
+
+    /**
+     * The constructor for the class
+     *
+     * @param string $stack The stack name
+     */
+    public function __construct($stack=null) {
+        $keyid = 'AAAAAAAAAAAA';
+        $secret = 'aaaaaaaaaaaaaaaaaa';
+        $region = 'ap-southeast-2';
+
+        parent:: __construct($keyid, $secret, $region, $stack);
+
+        // Set up the AWS mocks.
+        $this->mocks3handler = new MockHandler();
+        $this->s3client = $this->create_s3_client($this->mocks3handler);
+        $this->mockcloudformationhandler = new MockHandler();
+        $this->cloudformationclient = $this->create_cloudformation_client($this->mockcloudformationhandler);
+    }
+
+    /**
+     * Check if the bucket already exists in AWS.
+     * Upgrade to public.
+     *
+     * @param string $bucketname The name of the bucket to check.
+     * @return bool $bucketexists The result of the check.
+     */
+    public function check_bucket_exists($bucketname) {
+        return parent::check_bucket_exists($bucketname);
+    }
+
+    /**
+     * Create an S3 Bucket in AWS.
+     * Upgrade to public.
+     *
+     * @param string $bucketname The name to use for the S3 bucket.
+     * @return \stdClass $result The result of the bucket creation.
+     */
+    public function create_resource_bucket() {
+        return parent::create_resource_bucket();
+    }
+}
 
 /**
  * PHPUnit tests for Libre Lambda AWS provision.
@@ -47,173 +121,245 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
      * Test the does bucket exist method. Should return false.
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
-    public function test_check_bucket_exists_false() {
-        // Set up the AWS mock.
-        $mock = new MockHandler();
-        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-            return new S3Exception('Mock exception', $cmd);
+    public function test_create_resource_bucket_exists_false() {
+        $provisioner = new mock_provision();
+
+        $provisioner->mocks3handler->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd, ['code' => 'NotFound']);
         });
+        $provisioner->mocks3handler->append(new Result(
+            ['Location' => "http://bucket.s3.amazonaws.com/"]
+        ));
 
-        $keyid = 'AAAAAAAAAAAA';
-        $secret = 'aaaaaaaaaaaaaaaaaa';
-        $region = 'ap-southeast-2';
-        $bucketprefix = '';
+        $provisioner->create_resource_bucket();
 
-        $bucketname = 'foobar';
-
-        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-        $provisioner->create_s3_client($mock);
-
-        // Reflection magic as we are directly testing a private method.
-        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'check_bucket_exists');
-        $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke($provisioner, $bucketname);
-
-        $this->assertFalse($result);
+        $this->assertEquals(
+            $provisioner->resourcebucket,
+            $provisioner->mocks3handler->getLastCommand()['Bucket']
+        );
     }
 
     /**
      * Test the does bucket exist method. Should return true.
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
-    public function test_check_bucket_exists_true() {
-         // Set up the AWS mock.
-         $mock = new MockHandler();
-         $mock->append(new Result(array()));
+    public function test_create_resource_bucket_exists_true() {
+        $provisioner = new mock_provision();
 
-         $keyid = 'AAAAAAAAAAAA';
-         $secret = 'aaaaaaaaaaaaaaaaaa';
-         $region = 'ap-southeast-2';
-         $bucketprefix = '';
+        $provisioner->mocks3handler->append(new Result([]));
 
-         $bucketname = 'foobar';
+        $provisioner->create_resource_bucket();
 
-         $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-         $provisioner->create_s3_client($mock);
-
-         // Reflection magic as we are directly testing a private method.
-         $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'check_bucket_exists');
-         $method->setAccessible(true); // Allow accessing of private method.
-         $result = $method->invoke($provisioner, $bucketname);
-
-         $this->assertTrue($result);
+        $this->assertEquals(
+            $provisioner->resourcebucket,
+            $provisioner->mocks3handler->getLastCommand()['Bucket']
+        );
     }
 
     /**
      * Test the does bucket exist method. Should return true when bucket exists but we can't access.
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
-    public function test_check_bucket_exists_forbidden() {
-        // Set up the AWS mock.
-        $mock = new MockHandler();
-        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-            return new S3Exception('Mock exception', $cmd, array('code' => 403));
-        });
-
-        $keyid = 'AAAAAAAAAAAA';
-        $secret = 'aaaaaaaaaaaaaaaaaa';
-        $region = 'ap-southeast-2';
-        $bucketprefix = '';
+    public function test_create_resource_bucket_exists_forbidden() {
+        $provisioner = new mock_provision();
 
         $bucketname = 'foobar';
-
-        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-        $provisioner->create_s3_client($mock);
-
-        // Reflection magic as we are directly testing a private method.
-        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'check_bucket_exists');
-        $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke($provisioner, $bucketname);
-
-        $this->assertTrue($result);
-    }
-
-    /**
-     * Test creating the S3 bucket. Should return false.
-     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
-     */
-    public function test_create_s3_bucket_false() {
-        // Set up the AWS mock.
-        $mock = new MockHandler();
-        $response = array(
-                'code' => 'BucketAlreadyOwnedByYou',
-                'message' => 'Your previous request to create the named bucket succeeded and you already own it.'
-        );
-
-        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-            return new S3Exception('Mock exception', $cmd,  array(
-                    'code' => 'BucketAlreadyOwnedByYou',
-                    'message' => 'Your previous request to create the named bucket succeeded and you already own it.'
-            ));
+        $provisioner->mocks3handler->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd, ['code' => 'Forbidden']);
         });
 
-        $keyid = 'AAAAAAAAAAAA';
-        $secret = 'aaaaaaaaaaaaaaaaaa';
-        $region = 'ap-southeast-2';
-        $bucketprefix = '';
-
-        $bucketname = 'foobar.bah.joo.bar';
-
-        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-        $provisioner->create_s3_client($mock);
-
-        // Reflection magic as we are directly testing a private method.
-        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_s3_bucket');
-        $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke($provisioner, $bucketname);
-
-        $this->assertFalse($result->status);
-        $this->assertEquals($response['code'], $result->code);
-        $this->assertEquals($response['message'], $result->message);
+        $this->expectException("Aws\\S3\\Exception\\S3Exception");
+        $provisioner->create_resource_bucket();
     }
 
     /**
-     * Test creating the S3 bucket. Should return true.
+     * Test creating AWS stack failure when it exists and replace is false.
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
-    public function test_create_s3_bucket_true() {
-        // Set up the AWS mock.
-        $mock = new MockHandler();
-        $mock->append(new Result(array('Location' => 'http://foobar.bah.joo.bar.s3.amazonaws.com/')));
+    public function test_provision_stack_exists_no_replace() {
+        global $CFG;
 
-        $keyid = 'AAAAAAAAAAAA';
-        $secret = 'aaaaaaaaaaaaaaaaaa';
-        $region = 'ap-southeast-2';
-        $bucketprefix = '';
+        $provisioner = new mock_provision();
 
-        $bucketname = 'foobar.bah.joo.bar';
+        $provisioner->mocks3handler->append(new Result([]));
+        $provisioner->mocks3handler->append(new Result(['ObjectURL' => "https://amazon/lambdaconvert.zip"]));
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'Stacks' => [['StackStatus' => 'CREATE_COMPLETE']],
+        ]));
 
-        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-        $provisioner->create_s3_client($mock);
+        $result = $provisioner->provision_stack(
+            $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template',
+            [$CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip'],
+            false
+        );
 
-        // Reflection magic as we are directly testing a private method.
-        $method = new ReflectionMethod('\fileconverter_librelambda\provision', 'create_s3_bucket');
-        $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke($provisioner, $bucketname);
+        $this->assertEquals(
+            null,
+            $provisioner->mocks3handler->getLastCommand()
+        );
 
-        $this->assertTrue($result->status);
-        $this->assertEquals(0, $result->code);
-        $this->assertEquals('http://foobar.bah.joo.bar.s3.amazonaws.com/', $result->message);
+        $this->assertFalse($result->status);
+        $this->assertEquals('Stack exsists and replacement not requested', $result->message);
+
+        $this->expectOutputString("");
     }
 
     /**
-     * Test that bucketprefix is set as expected.
+     * Test creating AWS stack success when it exists and replace is true.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
-    public function test_bucketprefix_is_set_correctly() {
+    public function test_provision_stack_exists_replace() {
         global $CFG;
 
-        $keyid = 'AAAAAAAAAAAA';
-        $secret = 'aaaaaaaaaaaaaaaaaa';
-        $region = 'ap-southeast-2';
+        $lambdazip = 'lambdaconvert.zip';
+        $provisioner = new mock_provision();
 
-        $bucketprefix = '';
-        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-        $this->assertEquals(md5($CFG->siteidentifier), $provisioner->get_bucket_prefix());
+        $provisioner->mocks3handler->append(new Result([]));
+        $provisioner->mocks3handler->append(new Result(['ObjectURL' => "https://amazon/$lambdazip"]));
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'Stacks' => [['StackStatus' => 'CREATE_COMPLETE']],
+        ]));
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'StackId' => 'StackId',
+        ]));
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'Stacks' => [[
+                'StackStatus' => 'UPDATE_COMPLETE',
+                'Outputs' => [
+                    [
+                        'OutputKey' => 'InputBucket',
+                        'OutputValue' => 'InputBucket'
+                    ],
+                    [
+                        'OutputKey' => 'OutputBucket',
+                        'OutputValue' => 'OutputBucket'
+                    ],
+                ],
+            ]],
+        ]));
 
-        $bucketprefix = 'test_prefix';
-        $provisioner = new \fileconverter_librelambda\provision($keyid, $secret, $region, $bucketprefix);
-        $this->assertEquals('test_prefix', $provisioner->get_bucket_prefix());
+        $result = $provisioner->provision_stack(
+            $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template',
+            [$CFG->dirroot . "/files/converter/librelambda/lambda/$lambdazip"],
+            true
+        );
+
+        $lasts3 = $provisioner->mocks3handler->getLastCommand();
+        $this->assertEquals($lambdazip, $lasts3['Key']);
+        $this->assertEquals($provisioner->resourcebucket, $lasts3['Bucket']);
+
+        $this->assertEquals(
+            \fileconverter_librelambda\provision::DEFAULT_STACK_NAME,
+            $provisioner->mockcloudformationhandler->getLastCommand()['StackName']
+        );
+
+        $this->assertTrue($result->status);
+        $this->assertEquals('Cloudformation stack updated. Stack ID is: StackId', $result->message);
+
+        $this->expectOutputString("");
     }
 
+    /**
+     * Test creating AWS stack success when it does not exist.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_provision_stack_not_exists() {
+        global $CFG;
 
+        $stack = 'AnotherStack';
+        $lambdazip = 'lambdaconvert.zip';
+        $provisioner = new mock_provision($stack);
+
+        $provisioner->mocks3handler->append(new Result([]));
+        $provisioner->mocks3handler->append(new Result(['ObjectURL' => "https://amazon/$lambdazip"]));
+        $provisioner->mockcloudformationhandler->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new CloudFormationException('Mock exception', $cmd);
+        });
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'StackId' => 'StackId',
+        ]));
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'Stacks' => [[
+                'StackStatus' => 'CREATE_COMPLETE',
+                'Outputs' => [
+                    [
+                        'OutputKey' => 'InputBucket',
+                        'OutputValue' => 'InputBucket'
+                    ],
+                    [
+                        'OutputKey' => 'OutputBucket',
+                        'OutputValue' => 'OutputBucket'
+                    ],
+                ],
+            ]],
+        ]));
+
+        $result = $provisioner->provision_stack(
+            $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template',
+            [$CFG->dirroot . "/files/converter/librelambda/lambda/$lambdazip"],
+            false
+        );
+
+        $lasts3 = $provisioner->mocks3handler->getLastCommand();
+        $this->assertEquals($lambdazip, $lasts3['Key']);
+        $this->assertEquals($provisioner->resourcebucket, $lasts3['Bucket']);
+
+        $this->assertEquals(
+            $stack,
+            $provisioner->mockcloudformationhandler->getLastCommand()['StackName']
+        );
+
+        $this->assertTrue($result->status);
+        $this->assertEquals('Cloudformation stack created. Stack ID is: StackId', $result->message);
+
+        $this->expectOutputString("");
+    }
+
+    /**
+     * Test creating AWS stack success when it does not exist.
+     * We mock out the S3 client response as we are not trying to connect to the live AWS API.
+     */
+    public function test_remove_stack_remove_objects_ok() {
+        global $CFG;
+
+        $filename = 'some.file';
+        $provisioner = new mock_provision();
+
+        $cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template';
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'Stacks' => [['StackStatus' => 'CREATE_COMPLETE']],
+        ]));
+        $provisioner->mockcloudformationhandler->append(new Result([]));
+        $provisioner->mockcloudformationhandler->append(new Result([
+            'Stacks' => [['StackStatus' => 'DELETE_COMPLETE']],
+        ]));
+        $provisioner->mocks3handler->append(new Result([
+            'Contents' => [
+                ['Key' => $filename],
+            ]
+        ]));
+        $provisioner->mocks3handler->append(new Result([
+            'Deleted' => [
+                ['Key' => $filename],
+            ],
+            'Errors' => [],
+        ]));
+        $provisioner->mocks3handler->append(new Result([]));
+
+        $result = $provisioner->remove_stack();
+
+        $this->assertEquals(
+            \fileconverter_librelambda\provision::DEFAULT_STACK_NAME,
+            $provisioner->mockcloudformationhandler->getLastCommand()['StackName']
+        );
+        $this->assertEquals(
+            $provisioner->resourcebucket,
+            $provisioner->mocks3handler->getLastCommand()['Bucket']
+        );
+
+        $this->assertTrue($result->status);
+        $this->assertEquals('', $result->message);
+
+        $this->expectOutputString("");
+    }
 }
