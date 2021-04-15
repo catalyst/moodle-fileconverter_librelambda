@@ -61,10 +61,10 @@ Example:
 --region=ap-southeast-2 \
 --set-config
 ";
-$stackexists = "Stack exsists and replacement not requested.
+$stackexistsmsg = "Stack exsists and replacement not requested.
 If you want to replace the stack use \"--replace-stack\" option
 ";
-$stacknotexists = "Stack does not exsist.";
+$stacknotexistsmsg = "Stack does not exsist.";
 
 function abort($msg) {
     echo "$msg\n";
@@ -106,13 +106,15 @@ $provisioner = new \fileconverter_librelambda\provision(
     $options['stack-name']
 );
 
+$stackexists = $provisioner->stack_status();
+
 if ($options['remove-stack']) {
     if ($options['set-config']) {
         abort("Cannot set config when removing stack.\n\n$help");
     }
 
-    if (!$provisioner->stack_status()) {
-        abort($stacknotexists);
+    if (!$stackexists) {
+        abort($stacknotexistsmsg);
     }
 
     $stack = $provisioner->stack_name();
@@ -132,8 +134,8 @@ if ($options['remove-stack']) {
     exit (0);
 }
 
-if (!$options['replace-stack'] && $provisioner->stack_status()) {
-    abort("$stackexists\n$help");
+if (!$options['replace-stack'] && $stackexists) {
+    abort("$stackexistsmsg\n$help");
 }
 
 // First we make the Libre archive a zip file so it can be a Lambda layer.

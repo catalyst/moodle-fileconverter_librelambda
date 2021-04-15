@@ -201,7 +201,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
         $this->assertFalse($result->status);
         $this->assertEquals('Stack exsists and replacement not requested', $result->message);
 
-        $this->expectOutputString("Stack status: CREATE_COMPLETE".PHP_EOL);
+        $this->expectOutputString("");
     }
 
     /**
@@ -256,10 +256,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
         $this->assertTrue($result->status);
         $this->assertEquals('Cloudformation stack updated. Stack ID is: StackId', $result->message);
 
-        $this->expectOutputString(
-            "Stack status: CREATE_COMPLETE".PHP_EOL.
-            "Stack status: UPDATE_COMPLETE".PHP_EOL
-        );
+        $this->expectOutputString("");
     }
 
     /**
@@ -315,9 +312,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
         $this->assertTrue($result->status);
         $this->assertEquals('Cloudformation stack created. Stack ID is: StackId', $result->message);
 
-        $this->expectOutputString(
-            "Stack status: CREATE_COMPLETE".PHP_EOL
-        );
+        $this->expectOutputString("");
     }
 
     /**
@@ -365,9 +360,6 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
         $this->assertTrue($result->status);
         $this->assertEquals('', $result->message);
 
-        $this->expectOutputString(
-            "Stack status: CREATE_COMPLETE".PHP_EOL.
-            "Stack status: DELETE_COMPLETE".PHP_EOL
-        );
+        $this->expectOutputString("");
     }
 }

@@ -114,10 +114,10 @@ class provision {
     /**
      * The constructor for the class
      *
-     * @param string $keyid AWS API Access Key ID.
+     * @param string $keyid  AWS API Access Key ID.
      * @param string $secret AWS API Secret Access Key.
-     * @param string $region AWS region to create the environment in.
-     * @param string $stack Stack name
+     * @param string $region AWS Region to create the environment in.
+     * @param string $stack  AWS Stack name
      */
     public function __construct($keyid, $secret, $region, $stack=null) {
         global $CFG;
@@ -145,7 +145,7 @@ class provision {
     }
 
     /**
-     * Stack name
+     * Stack name.
      *
      * @return string $stack
      */
@@ -154,7 +154,7 @@ class provision {
     }
 
     /**
-     * Create AWS S3 API client.
+     * Create a AWS S3 API client.
      *
      * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
@@ -183,9 +183,8 @@ class provision {
 
 
     /**
-     * Create resource Bucket in AWS.
+     * Create the S3 resource bucket.
      *
-     * @param string $bucketname The name to use for the S3 bucket.
      * @return void
      * @throws S3Exception
      */
@@ -196,7 +195,7 @@ class provision {
             );
         } catch (S3Exception $e) {
             // Check the error code. If code = NotFound, this means the bucket
-            // does not exists.
+            // does not exists, so we create it.
             if ($e->getAwsErrorCode() == 'NotFound') {
                 $this->s3client->createBucket([
                     'ACL' => 'private',
@@ -213,7 +212,7 @@ class provision {
     }
 
     /**
-     * Remove an S3 Bucket from AWS.
+     * Remove the S3 resource bucket.
      *
      * @return void
      * @throws S3Exception
@@ -222,6 +221,7 @@ class provision {
         $s3result = $this->s3client->listObjects([
             'Bucket' => $this->resourcebucket
         ]);
+        // If the bucket is not empty - empty it.
         if ($contents = $s3result['Contents']) {
             $objects = array_map(function ($c) { return $c['Key']; }, $contents);
             $args = [
@@ -266,10 +266,10 @@ class provision {
     }
 
     /**
-     * Create and AWS Cloudformation API client.
+     * Create a AWS Cloudformation API client.
      *
      * @param \GuzzleHttp\Handler $handler Optional handler.
-     * @return \Aws\CloudFormation\CloudFormationClient The create Cloudformation client.
+     * @return \Aws\CloudFormation\CloudFormationClient
      */
     protected function create_cloudformation_client($handler=null) {
         $connectionoptions = array(
@@ -296,9 +296,10 @@ class provision {
     /**
      * Provision lambda stack and the resources.
      *
-     * @param array $params  The params to create the stack with.
-     * @param bool  $replace If the stack already exists replace it.
-     * @return \stdClass $result The result of stack creation.
+     * @param string $templatepath Stack template path.
+     * @param array  $resources    Files to upload to the rtesource bucket.
+     * @param bool   $replace      If the stack already exists replace it.
+     * @return \stdClass $result The result of the stack creation.
      */
     public function provision_stack($templatepath, $resources, $replace) {
         $result = new \stdClass();
@@ -335,37 +336,18 @@ class provision {
                 list($stackid, $outputs) = $this->create_stack($template);
                 $result->message = get_string('provision:stackcreated', 'fileconverter_librelambda', $stackid);
             }
+
+            return (object) array_merge((array) $result, $outputs);
+
         } catch (AwsException $e) {
             $result->status = false;
             $result->message = $e->getMessage() . ": " . $e->getAwsErrorMessage();
             return $result;
         }
-
-        foreach ($outputs as $output) {
-            switch ($output['OutputKey']) {
-                case 'S3UserAccessKey':
-                    $result->S3UserAccessKey = $output['OutputValue'];
-                    break;
-
-                case 'S3UserSecretKey':
-                    $result->S3UserSecretKey = $output['OutputValue'];
-                    break;
-
-                case 'InputBucket':
-                    $result->InputBucket = $output['OutputValue'];
-                    break;
-
-                case 'OutputBucket':
-                    $result->OutputBucket = $output['OutputValue'];
-                    break;
-            }
-        }
-
-        return $result;
     }
 
     /**
-     * Use cloudformation to create the "stack" in AWS.
+     * Use CloudFormation to create the stack in AWS.
      * The stack template specifies the input and output S3 buckets,
      * the required roles and user permisions, and the Lambda function
      * to convert documents.
@@ -390,7 +372,8 @@ class provision {
         $exitcodes = [
             'CREATE_FAILED',
             'CREATE_COMPLETE',
-            'DELETE_COMPLETE'
+            'DELETE_COMPLETE',
+            'ROLLBACK_COMPLETE'
         ];
         if ($ready = $this->check_stack_ready($exitcodes)) {
             list($stackstatus, $outputs) = $ready;
@@ -400,7 +383,7 @@ class provision {
             }
         }
 
-        // Upgrade to exception.
+        // Not COMPLETE - throw an exception.
         throw new CloudFormationException(
             "Stack creation failed",
             $this->cloudformationclient->getCommand('CreateStack', $stackparams)
@@ -408,8 +391,8 @@ class provision {
     }
 
     /**
-     * Use cloudformation to update the "stack" in AWS.
-     * Sometimes AWS cannot see a change, and refuses tp update. In that case
+     * Use CloudFormation to update the stack in AWS.
+     * Sometimes AWS cannot see the change, and refuses to update. In that case
      * we delete/create.
      *
      * @param string $template Stack template
@@ -437,6 +420,7 @@ class provision {
         $exitcodes = [
             'UPDATE_FAILED',
             'UPDATE_COMPLETE',
+            'ROLLBACK_COMPLETE'
         ];
         if ($ready = $this->check_stack_ready($exitcodes)) {
             list($stackstatus, $outputs) = $ready;
@@ -446,7 +430,7 @@ class provision {
             }
         }
 
-        // Upgrade to exception.
+        // Not COMPLETE - throw an exception.
         throw new CloudFormationException(
             "Stack update failed",
             $this->cloudformationclient->getCommand('UpdateStack', $stackparams)
@@ -456,6 +440,7 @@ class provision {
     /**
      * Remove the stack and the resources from AWS.
      *
+     * @return void
      * @return \stdClass $result The result of stack removal.
      */
     public function remove_stack() {
@@ -478,7 +463,7 @@ class provision {
     }
 
     /**
-     * Use cloudformation to remove the "stack" from AWS.
+     * Use CloudFormation to remove the stack from AWS.
      *
      * @return void
      * @throws CloudFormationException
@@ -498,7 +483,7 @@ class provision {
             $deleted = true; // We assume it is gone if there's no status.
         }
         if (!$deleted) {
-            // Upgrade to exception.
+            // Not deleted - throw an exception.
             throw new CloudFormationException(
                 "Stack removal failed. Maybe the buckets are not empty?",
                 $this->cloudformationclient->getCommand('DeleteObjects', $deleteparams)
@@ -509,12 +494,13 @@ class provision {
     /**
      * Check stack ready
      *
-     * @param array $statuses List of acceptable statuses
+     * @param array $statuses List of terminal statuses
      * @return array|null [$status, $outputs]
      */
     private function check_stack_ready($statuses) {
         // Check stack status until acceptable code received,
-        // or we timeout in 5 mins.
+        // or we timeout in 5 mins. We shortcut the process after
+        // so many "no stack" responses.
         $maxnull = 3;
         for ($i = 0, $n = 0; $i < 10; $i++) {
             $res = $this->check_stack();
@@ -528,11 +514,12 @@ class provision {
 
             list ($stackstatus, $outputs) = $res;
 
-            // Exit under cetain conditions.
+            // Exit in case terminal status is reported.
             if (in_array($stackstatus, $statuses, true)) {
                 return $res;
             }
 
+            echo "Stack status: " . $stackstatus . PHP_EOL;
             sleep(30);  // Sleep for a bit before rechecking.
         }
     }
@@ -575,7 +562,13 @@ class provision {
         $stackdetail = $stacks[0];
         $stackstatus = $stackdetail['StackStatus'];
 
-        echo "Stack status: " . $stackstatus . PHP_EOL;
-        return [$stackstatus, isset($stackdetail['Outputs']) ? $stackdetail['Outputs'] : null];
+        $out = [];
+        if (isset($stackdetail['Outputs'])) {
+            foreach ($stackdetail['Outputs'] as $output) {
+                $out[$output['OutputKey']] = $output['OutputValue'];
+            }
+        }
+
+        return [$stackstatus, $out];
     }
 }
