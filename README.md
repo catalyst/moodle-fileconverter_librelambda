@@ -164,7 +164,7 @@ sudo -u www-data php files/converter/librelambda/cli/provision.php \
 --keyid=<keyid> \
 --secret=<secretkey> \
 --region=<region> \
---replace-stack
+--replace-stack \
 --set-config
 
 == Provisioning the Lambda function and stack resources ==
