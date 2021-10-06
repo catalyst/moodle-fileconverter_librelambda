@@ -15,10 +15,14 @@ the best we can do at this moment.
     wget https://download.documentfoundation.org/libreoffice/src/6.4.7/libreoffice-6.4.7.2.tar.xz
 
     docker build -t lo-build .
+    # OR for arm64/aarch64 (graviton):
+    docker build -t lo-build --build-arg ARCH=aarch64 .
     docker run -it --rm lo-build bash
 
     (in the container)
     make
+    # OR for arm64/aarch64 (graviton):
+    CPPFLAGS="-DPNG_ARM_NEON_OPT=0" make
     strip instdir/program/*
     tar -cf /lo-instdir.tar instdir
 

@@ -378,11 +378,15 @@ Build the image and launch a container. Depending on your circumnstances/prefere
 slightly different arguments with `docker` commands:
 
     docker build -t lo-build .
+    # OR for arm64/aarch64 (graviton):
+    docker build -t lo-build --build-arg ARCH=aarch64 .
     docker run -it --rm lo-build bash
 
 This should give you a shell in a running container. In the container shell:
 
     make
+    # OR for arm64/aarch64 (graviton):
+    CPPFLAGS="-DPNG_ARM_NEON_OPT=0" make
     strip instdir/program/*
 
 Once the binaries are compiled (and stripped) you can run the following commands (still in the container shell)
