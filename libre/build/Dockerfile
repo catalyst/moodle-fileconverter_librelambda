@@ -1,6 +1,7 @@
 FROM amazonlinux:2
 
 ARG lo_ver=6.4.7.2
+ARG ARCH=x86_64
 ENV LO=libreoffice-${lo_ver}
 ENV LO_TAR=${LO}.tar.xz
 
@@ -11,9 +12,10 @@ RUN yum install -y yum-utils tar xz which
 RUN yum-config-manager --enable epel
 
 COPY RPMS/ /RPMS/
-RUN yum install -y /RPMS/*.rpm
+RUN yum install -y /RPMS/*.${ARCH}.rpm
 
 RUN yum groupinstall -y "Development Tools"
+RUN yum install -y fontconfig-devel
 
 WORKDIR /
 
@@ -23,6 +25,7 @@ COPY configure.ac                  ${LO}/
 COPY tarballs/                     ${LO}/external/tarballs/
 COPY ExternalProject_fontconfig.mk ${LO}/external/fontconfig/
 COPY ExternalProject_freetype.mk   ${LO}/external/freetype/
+COPY ExternalProject_nss.mk        ${LO}/external/nss/
 
 RUN yum install -y \
     expat-devel \
@@ -35,7 +38,9 @@ RUN yum install -y \
     nspr-devel \
     nss-devel \
     openssl-devel \
-    perl-Digest-MD5
+    perl-Digest-MD5 \
+    fontconfig-devel \
+    libpng-devel
 
 WORKDIR ${LO}
 
@@ -131,6 +136,8 @@ RUN sed -i -e '/CPPUNIT_ASSERT_EQUAL(OUString(), sErrors);/s!^  !//!' svx/qa/uni
 #   docker run -it --rm --cap-add=SYS_PTRACE --security-opt seccomp=unconfined <image tag> bash
 # It will open in the build dir. Run:
 #   make
+# OR for arm64/aarch64 (graviton):
+#   CPPFLAGS="-DPNG_ARM_NEON_OPT=0" make
 # It should run without errors, and create instdir/ that you can strip
 #   strip instdir/program/*
 # and pack with eg.
