@@ -178,11 +178,11 @@ class tester {
     }
 
      /**
-     * Put file into S3 bucket
-     *
-     * @param string $filepath
-     * @return \stdClass
-     */
+      * Put file into S3 bucket
+      *
+      * @param string $filepath
+      * @return \stdClass
+      */
     private function bucket_put_object($filepath) {
         $result = new \stdClass();
         $result->code = 0;
@@ -261,17 +261,14 @@ class tester {
         // Check mime type of downloaded object.
         $tmppath = tempnam(sys_get_temp_dir(), 'converted').'.pdf';
         $tmpfile = fopen($tmppath, 'w');
-        //$tmpfile = tmpfile();
         fwrite($tmpfile, $getobject['Body']);
-        //$tmppath = stream_get_meta_data($tmpfile)['uri'];
         $mimetype = mime_content_type($tmppath);
         fclose($tmpfile);
 
         if ($mimetype == 'application/pdf') {
             $result->code = 0;
             $result->message = "$tmppath PDF created.";
-        }
-        else {
+        } else {
             $result->message = "$tmppath is not a PDF";
         }
 

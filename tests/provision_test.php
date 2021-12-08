@@ -76,7 +76,7 @@ class mock_provision extends \fileconverter_librelambda\provision {
         $secret = 'aaaaaaaaaaaaaaaaaa';
         $region = 'ap-southeast-2';
 
-        parent:: __construct($keyid, $secret, $region, $stack);
+        parent::__construct($keyid, $secret, $region, $stack);
 
         // Set up the AWS mocks.
         $this->mocks3handler = new MockHandler();
