@@ -29,6 +29,11 @@ This plugin currently supports Moodle:
 * 3.4
 * 3.5
 * 3.6
+* 3.7
+* 3.8
+* 3.9
+* 3.10
+* 3.11
 
 ## Plugin Installation
 The following steps will help you install this plugin into your Moodle instance.

@@ -223,11 +223,16 @@ class provision {
         ]);
         // If the bucket is not empty - empty it.
         if ($contents = $s3result['Contents']) {
-            $objects = array_map(function ($c) { return $c['Key']; }, $contents);
+            $objects = array_map(function ($c) {
+                return $c['Key'];
+            }, $contents);
+            $deleteobjects = array_map(function ($o) {
+                return ['Key' => $o];
+            }, $objects);
             $args = [
                 'Bucket' => $this->resourcebucket,
                 'Delete' => [
-                    'Objects' => array_map(function ($o) { return ['Key' => $o]; }, $objects),
+                    'Objects' => $deleteobjects,
                 ],
             ];
             $s3result = $this->s3client->deleteObjects($args);
