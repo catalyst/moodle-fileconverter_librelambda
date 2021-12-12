@@ -189,6 +189,7 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
     public function test_start_document_conversion() {
         global $CFG;
         $this->resetAfterTest();
+        set_config('s3_input_bucket', 'bucket1', 'fileconverter_librelambda');
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
@@ -278,6 +279,8 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
     public function test_poll_document_conversion_already_progress() {
         global $CFG;
         $this->resetAfterTest();
+        set_config('s3_input_bucket', 'bucket1', 'fileconverter_librelambda');
+        set_config('s3_output_bucket', 'bucket2', 'fileconverter_librelambda');
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
@@ -326,6 +329,8 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
     public function test_execute_conversion_task_progress() {
         global $CFG;
         $this->resetAfterTest();
+        set_config('s3_input_bucket', 'bucket1', 'fileconverter_librelambda');
+        set_config('s3_output_bucket', 'bucket2', 'fileconverter_librelambda');
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
