@@ -25,8 +25,6 @@ namespace fileconverter_librelambda\task;
 
 use core\task\scheduled_task;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Simple task to convert submissions to pdf in the background.
  * @copyright   2019 Matt Porritt <mattp@catalyst-au.net>

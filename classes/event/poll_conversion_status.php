@@ -24,8 +24,6 @@
 
 namespace fileconverter_librelambda\event;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The LibreLambda poll conversion status event.
  *
