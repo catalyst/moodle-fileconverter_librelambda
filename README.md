@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/catalyst/moodle-fileconverter_librelambda.svg?branch=master)](https://travis-ci.org/catalyst/moodle-fileconverter_librelambda)
+[![Build Status](https://github.com/catalyst/moodle-fileconverter_librelambda/workflows/Run%20all%20tests%20for%20Moodle%2034+/badge.svg)](https://github.com/catalyst/moodle-fileconverter_librelambda/actions)
 
 # Libre Lambda Document Converter #
 
