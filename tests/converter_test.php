@@ -465,4 +465,80 @@ class fileconverter_librelambda_converter_testcase extends advanced_testcase {
         // Test the client creates correctly with proxy settings.
         $this->assertTrue($client3 instanceof \Aws\S3\S3Client);
     }
+
+    /**
+     * Test record deduplication for Librelambda file conversions.
+     */
+    public function test_conversion_record_deduplication() {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+
+        set_config('s3_input_bucket', 'bucket1', 'fileconverter_librelambda');
+        set_config('s3_output_bucket', 'bucket2', 'fileconverter_librelambda');
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
+        $instance = $generator->create_instance(array('course' => $course->id));
+        $context = context_module::instance($instance->cmid);
+
+        // Create file to analyze.
+        $fs = get_file_storage();
+        $filerecord = array(
+            'contextid' => $context->id,
+            'component' => 'assignsubmission_file',
+            'filearea' => 'submission_files',
+            'itemid' => $instance->cmid,
+            'filepath' => '/',
+            'filename' => 'testsubmission.odt');
+        $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
+        $file = $fs->create_file_from_pathname($filerecord, $fileurl);
+
+        $conversiondata = (object) [
+            'sourcefileid' => $file->get_id(),
+            'targetformat' => 'pdf',
+            'converter' => '\fileconverter_librelambda\converter',
+        ];
+
+        // First create a valid conversion record.
+        $conversion = new conversion(0, $conversiondata);
+        $conversion->create();
+
+        // Now lets duplicate this a couple of times.
+        $conversion2 = new conversion(0, $conversiondata);
+        $conversion2->create();
+
+        $conversion3 = new conversion(0, $conversiondata);
+        $conversion3->create();
+
+        // Setup AWS mocking.
+        $mock = new MockHandler();
+        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+            return new S3Exception('Mock exception', $cmd, array('code' => 'NoSuchKey'));
+        });
+
+        $converter = new \fileconverter_librelambda\converter();
+        $converter->create_client($mock);
+        $converter->start_document_conversion($conversion);
+        $converter->start_document_conversion($conversion2);
+        $converter->start_document_conversion($conversion3);
+
+        // Now check the status of the table before and after executing the task.
+        $this->assertEquals(3, $DB->count_records('file_conversion'));
+        $task = new \fileconverter_librelambda\task\convert_submissions();
+        $this->expectOutputRegex("/Processing/"); // We expect trace output for this test.
+        $task->execute();
+        $this->assertEquals(1, $DB->count_records('file_conversion'));
+
+        // Now check that we aren't being greedy and deleting non-librelambda records.
+        $conversiondata->converter = '\fileconverter_googledrive\converter';
+        $conversion4 = new conversion(0, $conversiondata);
+        $conversion4->create();
+        $converter->start_document_conversion($conversion4);
+
+        // Now check the status of the table before and after executing the task.
+        $this->assertEquals(2, $DB->count_records('file_conversion'));
+        $task->execute();
+        $this->assertEquals(2, $DB->count_records('file_conversion'));
+    }
 }
