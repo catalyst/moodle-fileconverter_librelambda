@@ -63,8 +63,26 @@ class convert_submissions extends scheduled_task {
                 mtrace('LibreLambda: Processing conversions for file id: ' . $pendingconversion->sourcefileid);
                 $conversions = \core_files\conversion::get_conversions_for_file($file, $pendingconversion->targetformat);
 
+                // Quickly filter for any conversion pulled from another coverter. Edge case, but the query can return it.
+                // And we cannot and should not care or touch it.
+                $conversions = array_filter($conversions, function ($el) {
+                    return $el->get('converter') === '\fileconverter_librelambda\converter';
+                });
+
                 mtrace('LibreLambda: Found: ' . count($conversions)
                     . ' conversions for file id: ' . $pendingconversion->sourcefileid);
+
+                // If we have found duplicates here, we should clean them up.
+                // Core does not treat this table as safe, so neither should we.
+                // See converter::start_conversion.
+                if (count($conversions) > 1) {
+                    foreach ($conversions as $key => $conversion) {
+                        if ($conversion->get('id') && count($conversions) > 1) {
+                            $conversion->delete();
+                            unset($conversions[$key]);
+                        }
+                    }
+                }
 
                 foreach ($conversions as $conversion) {
                     $converter = new \fileconverter_librelambda\converter();
