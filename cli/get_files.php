@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This command line script will get all document files from S3 in a site that
+ * The command line script.
+ *
+ * Will get all document files from S3 in a site that
  * uses the object fs plugin and download them locally
  *
  * @package     fileconverter_librelambda

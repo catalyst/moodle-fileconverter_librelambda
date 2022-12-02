@@ -33,16 +33,25 @@ namespace fileconverter_librelambda\event;
  */
 class poll_conversion_status extends \core\event\base {
 
+    /**
+     * Init function.
+     */
     protected function init() {
         $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
 
     }
 
+    /**
+     * Get event name.
+     */
     public static function get_name() {
         return get_string('event:poll_conversion_status', 'fileconverter_librelambda');
     }
 
+    /**
+     * Get event description.
+     */
     public function get_description() {
         return "The conversion with id '{$this->other['id']}' has been polled and returned the status '{$this->other['status']}'.";
     }

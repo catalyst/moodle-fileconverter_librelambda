@@ -22,13 +22,16 @@
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace fileconverter_librelambda;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 
-use Aws\Result;
 use Aws\MockHandler;
+use Aws\Result;
 use Aws\CommandInterface;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
@@ -41,7 +44,7 @@ use Aws\CloudFormation\Exception\CloudFormationException;
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class mock_provision extends \fileconverter_librelambda\provision {
+class provision_mock extends provision {
     /**
      *
      * @var MockHandler
@@ -100,13 +103,13 @@ class mock_provision extends \fileconverter_librelambda\provision {
      * Create an S3 Bucket in AWS.
      * Upgrade to public.
      *
-     * @param string $bucketname The name to use for the S3 bucket.
      * @return \stdClass $result The result of the bucket creation.
      */
     public function create_resource_bucket() {
         return parent::create_resource_bucket();
     }
 }
+
 
 /**
  * PHPUnit tests for Libre Lambda AWS provision.
@@ -115,14 +118,14 @@ class mock_provision extends \fileconverter_librelambda\provision {
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class fileconverter_librelambda_provision_testcase extends advanced_testcase {
+class provision_test extends \advanced_testcase {
 
     /**
      * Test the does bucket exist method. Should return false.
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
     public function test_create_resource_bucket_exists_false() {
-        $provisioner = new mock_provision();
+        $provisioner = new provision_mock();
 
         $provisioner->mocks3handler->append(function (CommandInterface $cmd, RequestInterface $req) {
             return new S3Exception('Mock exception', $cmd, ['code' => 'NotFound']);
@@ -144,7 +147,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
     public function test_create_resource_bucket_exists_true() {
-        $provisioner = new mock_provision();
+        $provisioner = new provision_mock();
 
         $provisioner->mocks3handler->append(new Result([]));
 
@@ -161,7 +164,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
     public function test_create_resource_bucket_exists_forbidden() {
-        $provisioner = new mock_provision();
+        $provisioner = new provision_mock();
 
         $bucketname = 'foobar';
         $provisioner->mocks3handler->append(function (CommandInterface $cmd, RequestInterface $req) {
@@ -179,7 +182,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
     public function test_provision_stack_exists_no_replace() {
         global $CFG;
 
-        $provisioner = new mock_provision();
+        $provisioner = new provision_mock();
 
         $provisioner->mocks3handler->append(new Result([]));
         $provisioner->mocks3handler->append(new Result(['ObjectURL' => "https://amazon/lambdaconvert.zip"]));
@@ -212,7 +215,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
         global $CFG;
 
         $lambdazip = 'lambdaconvert.zip';
-        $provisioner = new mock_provision();
+        $provisioner = new provision_mock();
 
         $provisioner->mocks3handler->append(new Result([]));
         $provisioner->mocks3handler->append(new Result(['ObjectURL' => "https://amazon/$lambdazip"]));
@@ -268,7 +271,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
 
         $stack = 'AnotherStack';
         $lambdazip = 'lambdaconvert.zip';
-        $provisioner = new mock_provision($stack);
+        $provisioner = new provision_mock($stack);
 
         $provisioner->mocks3handler->append(new Result([]));
         $provisioner->mocks3handler->append(new Result(['ObjectURL' => "https://amazon/$lambdazip"]));
@@ -323,7 +326,7 @@ class fileconverter_librelambda_provision_testcase extends advanced_testcase {
         global $CFG;
 
         $filename = 'some.file';
-        $provisioner = new mock_provision();
+        $provisioner = new provision_mock();
 
         $cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template';
         $provisioner->mockcloudformationhandler->append(new Result([

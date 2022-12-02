@@ -66,7 +66,10 @@ If you want to replace the stack use \"--replace-stack\" option
 ";
 $stacknotexistsmsg = "Stack does not exsist.";
 
-function abort($msg) {
+/** Abort function
+ * @param string $msg
+ */
+function abort(string $msg) {
     echo "$msg\n";
     die;
 }
