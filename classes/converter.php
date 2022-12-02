@@ -282,7 +282,7 @@ class converter implements \core_files\converter_interface {
         $converter = new \fileconverter_librelambda\converter();
         // First check that we have the basic configuration settings set.
         if (!$converter->is_config_set()) {
-            debugging(get_string('settings:confignotset', 'fileconverter_librelambda'), 'notifyproblem');
+            debugging(get_string('settings:confignotset', 'fileconverter_librelambda'), DEBUG_NORMAL);
             return false;
         }
         $converter->create_client();
