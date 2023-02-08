@@ -41,7 +41,10 @@ use Aws\Exception\AwsException;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provision {
+    /** The default stack name */
     const DEFAULT_STACK_NAME = 'LambdaConvert';
+
+    /** The max bucket prefix length */
     const MAX_BUCKET_PREFIX_LEN = 52;
 
     /**

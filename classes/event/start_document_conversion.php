@@ -33,16 +33,25 @@ namespace fileconverter_librelambda\event;
  */
 class start_document_conversion extends \core\event\base {
 
+    /**
+     * Init function.
+     */
     protected function init() {
         $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
 
     }
 
+    /**
+     * Get event name.
+     */
     public static function get_name() {
         return get_string('event:start_document_conversion', 'fileconverter_librelambda');
     }
 
+    /**
+     * Get event description.
+     */
     public function get_description() {
         return "The conversion with id '{$this->other['id']}' has been commenced with status '{$this->other['status']}'.";
     }

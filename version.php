@@ -25,11 +25,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'fileconverter_librelambda';
-$plugin->release = 2022011500;
-$plugin->version = 2022011500;
+$plugin->release = 2023010900;
+$plugin->version = 2023010900;
 $plugin->requires = 2017111309;
 $plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = array(
-        'local_aws' => 2020061500
+    'local_aws' => 2022033100
 );
-$plugin->supported = [34, 311]; // A range of branch numbers of supported moodle versions.
+$plugin->supported = [34, 401]; // A range of branch numbers of supported moodle versions.

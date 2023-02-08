@@ -22,6 +22,9 @@
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace fileconverter_librelambda;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -33,6 +36,7 @@ use Aws\CommandInterface;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
 use \core_files\conversion;
+use \context_module;
 
 /**
  * PHPUnit tests for Libre Lambda file converter.
@@ -41,7 +45,7 @@ use \core_files\conversion;
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class fileconverter_librelambda_events_testcase extends advanced_testcase {
+class events_test extends \advanced_testcase {
 
     /**
      * Test start document conversion method.
