@@ -208,12 +208,31 @@ class provision_test extends \advanced_testcase {
     }
 
     /**
+     * Helper that checks whether the AWS stack files are checked out.
+     *
+     * @return string AWS stack files dir
+     */
+    private function check_aws_stack(): string {
+        $repo = "https://github.com/catalyst/moodle-fileconverter_librelambda-aws_stack.git";
+        $stackdir = sys_get_temp_dir() . '/fileconverter_librelambda-aws_stack';
+        if (!is_dir($stackdir)) {
+            $this->markTestSkipped(implode("\n", [
+                "$stackdir not found.",
+                "You can either:",
+                "  Checkout $repo in $stackdir",
+                "  or",
+                "  Run php cli/provision.php that will do that for you."
+            ]));
+        }
+        return $stackdir;
+    }
+
+    /**
      * Test creating AWS stack success when it exists and replace is true.
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
     public function test_provision_stack_exists_replace() {
-        global $CFG;
-
+        $stackdir = $this->check_aws_stack();
         $lambdazip = 'lambdaconvert.zip';
         $provisioner = new provision_mock();
 
@@ -242,8 +261,8 @@ class provision_test extends \advanced_testcase {
         ]));
 
         $result = $provisioner->provision_stack(
-            $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template',
-            [$CFG->dirroot . "/files/converter/librelambda/lambda/$lambdazip"],
+            "$stackdir/lambda/stack.template",
+            ["$stackdir/lambda/$lambdazip"],
             true
         );
 
@@ -267,8 +286,7 @@ class provision_test extends \advanced_testcase {
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
     public function test_provision_stack_not_exists() {
-        global $CFG;
-
+        $stackdir = $this->check_aws_stack();
         $stack = 'AnotherStack';
         $lambdazip = 'lambdaconvert.zip';
         $provisioner = new provision_mock($stack);
@@ -298,9 +316,9 @@ class provision_test extends \advanced_testcase {
         ]));
 
         $result = $provisioner->provision_stack(
-            $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template',
-            [$CFG->dirroot . "/files/converter/librelambda/lambda/$lambdazip"],
-            false
+            "$stackdir/lambda/stack.template",
+            ["$stackdir/lambda/$lambdazip"],
+            true
         );
 
         $lasts3 = $provisioner->mocks3handler->getLastCommand();
@@ -323,12 +341,11 @@ class provision_test extends \advanced_testcase {
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
      */
     public function test_remove_stack_remove_objects_ok() {
-        global $CFG;
-
+        $stackdir = $this->check_aws_stack();
         $filename = 'some.file';
         $provisioner = new provision_mock();
 
-        $cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template';
+        $cloudformationpath = "$stackdir/lambda/stack.template";
         $provisioner->mockcloudformationhandler->append(new Result([
             'Stacks' => [['StackStatus' => 'CREATE_COMPLETE']],
         ]));
@@ -336,18 +353,18 @@ class provision_test extends \advanced_testcase {
         $provisioner->mockcloudformationhandler->append(new Result([
             'Stacks' => [['StackStatus' => 'DELETE_COMPLETE']],
         ]));
-        $provisioner->mocks3handler->append(new Result([
+        $provisioner->mocks3handler->append(new Result([ // listObjects.
             'Contents' => [
                 ['Key' => $filename],
             ]
         ]));
-        $provisioner->mocks3handler->append(new Result([
+        $provisioner->mocks3handler->append(new Result([ // deleteObjects.
             'Deleted' => [
                 ['Key' => $filename],
             ],
             'Errors' => [],
         ]));
-        $provisioner->mocks3handler->append(new Result([]));
+        $provisioner->mocks3handler->append(new Result([])); // deleteBucket.
 
         $result = $provisioner->remove_stack();
 

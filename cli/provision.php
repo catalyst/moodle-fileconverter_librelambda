@@ -74,6 +74,16 @@ function abort(string $msg) {
     die;
 }
 
+/** exec() with return value check
+ * @param string $command
+ */
+function os_exec(string $command) {
+    exec($command, $output, $retval);
+    if ($retval != 0) {
+        abort("$command failed:\n" . implode("\n", $output));
+    }
+}
+
 echo PHP_EOL;
 
 // Get cli options.
@@ -141,16 +151,24 @@ if (!$options['replace-stack'] && $stackexists) {
     abort("$stackexistsmsg\n$help");
 }
 
+// check out latest moodle-fileconverter_librelambda-aws_stack
+$repo = "https://github.com/catalyst/moodle-fileconverter_librelambda-aws_stack.git";
+$stackdir = sys_get_temp_dir() . '/fileconverter_librelambda-aws_stack';
+if (!is_dir($stackdir)) {
+    os_exec("git clone $repo $stackdir");
+}
+os_exec("cd $stackdir && git pull");
+
 // First we make the Libre archive a zip file so it can be a Lambda layer.
-$librepath = $CFG->dirroot . '/files/converter/librelambda/libre/lo.tar.xz';
+$librepath = "$stackdir/libre/lo.tar.xz";
 $tmpfname = sys_get_temp_dir() . '/lo.zip';
 $zip = new ZipArchive();
 $zip->open($tmpfname, ZipArchive::CREATE);
 $zip->addFile($librepath, 'lo.tar.xz');
 $zip->close();
 
-$cloudformationpath = $CFG->dirroot . '/files/converter/librelambda/lambda/stack.template';
-$lambdapath = $CFG->dirroot . '/files/converter/librelambda/lambda/lambdaconvert.zip';
+$cloudformationpath = "$stackdir/lambda/stack.template";
+$lambdapath = "$stackdir/lambda/lambdaconvert.zip";
 
 // Create Lambda function, IAM roles and the rest of the stack.
 cli_heading(get_string('provision:stack', 'fileconverter_librelambda'));

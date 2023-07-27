@@ -30,6 +30,6 @@ $plugin->version = 2023010900;
 $plugin->requires = 2017111309;
 $plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = array(
-    'local_aws' => 2022033100
+    'local_aws' => 2023072100
 );
 $plugin->supported = [34, 401]; // A range of branch numbers of supported moodle versions.
