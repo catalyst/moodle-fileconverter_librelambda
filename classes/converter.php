@@ -418,6 +418,10 @@ class converter implements \core_files\converter_interface {
      * @return  bool
      */
     public static function supports($from, $to) {
+        // Make sure we receive the extensions in lowercase.
+        $from = strtolower($from);
+        $to = strtolower($to);
+
         // This is not a one-liner because of php 5.6.
         $imports = self::$imports;
         $exports = self::$exports;

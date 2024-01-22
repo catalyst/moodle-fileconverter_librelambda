@@ -546,4 +546,49 @@ class converter_test extends \advanced_testcase {
         $task->execute();
         $this->assertEquals(2, $DB->count_records('file_conversion'));
     }
+
+    /**
+     * Data provider for test_supports
+     * Supported formats: 'doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt',
+     * 'ods', 'txt', 'png', 'jpg', 'gif', 'pdf'
+     *
+     * @return array
+     */
+    public function supports_provider() {
+        return [
+            ['doc', true], ['DOC', true],
+            ['docx', true], ['DOCX', true],
+            ['rtf', true], ['RTF', true],
+            ['xls', true], ['XLS', true],
+            ['xlsx', true], ['XLSX', true],
+            ['ppt', true], ['PPT', true],
+            ['pptx', true], ['PPTX', true],
+            ['html', true], ['HTML', true],
+            ['odt', true], ['ODT', true],
+            ['ods', true], ['ODS', true],
+            ['txt', true], ['TXT', true],
+            ['png', true], ['PNG', true],
+            ['jpg', true], ['JPG', true],
+            ['gif', true], ['GIF', true],
+            ['pdf', false], ['PDF', false],
+            ['mp3', false], ['MP3', false],
+            ['mp4', false], ['MP4', false],
+        ];
+    }
+
+    /**
+     * Test supports method of converter class.
+     *
+     * @covers       \fileconverter_librelambda\converter::supports
+     * @dataProvider supports_provider
+     *
+     * @param string $format The format to test.
+     * @param bool $expected The expected result.
+     *
+     */
+    public function test_supports($format, $expected) {
+        // Check supported format.
+        $this->assertEquals($expected, \fileconverter_librelambda\converter::supports($format, 'pdf'));
+        $this->assertEquals($expected, \fileconverter_librelambda\converter::supports($format, 'PDF'));
+    }
 }
