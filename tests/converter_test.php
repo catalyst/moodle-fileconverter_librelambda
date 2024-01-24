@@ -549,25 +549,31 @@ class converter_test extends \advanced_testcase {
 
     /**
      * Data provider for test_supports
-     * Supported formats: 'doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt',
-     * 'ods', 'txt', 'png', 'jpg', 'gif', 'pdf'
      *
      * @return array
      */
     public function supports_provider() {
         return [
             ['doc', true], ['DOC', true],
+            ['docm', false], ['DOCM', false],
             ['docx', true], ['DOCX', true],
+            ['dotx', true], ['DOTX', true],
             ['rtf', true], ['RTF', true],
             ['xls', true], ['XLS', true],
+            ['xlsm', false], ['XLSM', false],
             ['xlsx', true], ['XLSX', true],
+            ['xltm', false], ['XLTM', false],
+            ['pot', true], ['POT', true],
             ['ppt', true], ['PPT', true],
+            ['pptm', false], ['PPTM', false],
             ['pptx', true], ['PPTX', true],
             ['html', true], ['HTML', true],
             ['odt', true], ['ODT', true],
             ['ods', true], ['ODS', true],
             ['txt', true], ['TXT', true],
+            ['csv', true], ['CSV', true],
             ['png', true], ['PNG', true],
+            ['jpeg', true], ['JPEG', true],
             ['jpg', true], ['JPG', true],
             ['gif', true], ['GIF', true],
             ['pdf', false], ['PDF', false],
