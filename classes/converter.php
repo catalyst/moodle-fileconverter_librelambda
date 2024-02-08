@@ -43,17 +43,21 @@ class converter implements \core_files\converter_interface {
     private static $imports = [
         'doc' => 'application/msword',
         'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'dotx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
         'rtf' => 'application/rtf',
         'xls' => 'application/vnd.ms-excel',
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'pot' => 'application/vnd.ms-powerpoint',
         'ppt' => 'application/vnd.ms-powerpoint',
         'pptx' => 'application/vnd.ms-powerpoint',
         'html' => 'text/html',
         'odt' => 'application/vnd.oasis.opendocument.text',
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
         'png' => 'image/png',
+        'jpeg' => 'image/jpeg',
         'jpg' => 'image/jpeg',
         'txt' => 'text/plain',
+        'csv' => 'text/csv',
         'gif' => 'image/gif',
     ];
 
