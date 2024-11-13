@@ -25,8 +25,6 @@ namespace fileconverter_librelambda;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
-
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
 use Aws\Iam\Exception\IamException;
@@ -150,7 +148,7 @@ class tester {
 
         // Check if we are using the Moodle proxy.
         if ($this->useproxy) {
-            $connectionoptions['http'] = ['proxy' => \local_aws\local\aws_helper::get_proxy_string()];
+            $connectionoptions['http'] = ['proxy' => helper::get_proxy_string()];
         }
 
         // Allow handler overriding for testing.
