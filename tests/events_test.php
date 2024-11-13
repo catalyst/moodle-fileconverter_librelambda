@@ -27,9 +27,6 @@ namespace fileconverter_librelambda;
 
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
-require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
-
 use Aws\Result;
 use Aws\MockHandler;
 use Aws\CommandInterface;
