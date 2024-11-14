@@ -35,8 +35,7 @@ This plugin currently supports Moodle:
 The following steps will help you install this plugin into your Moodle instance.
 
 1. Clone or copy the code for this repository into your Moodle instance at the following location: `<moodledir>/files/converter/librelambda`
-2. This plugin also depends on *local_aws* get the code from `https://github.com/catalyst/moodle-local_aws` and clone or copy it into `<moodledir>/local/aws`
-3. Run the upgrade: `sudo -u www-data php admin/cli/upgrade`
+2. Run the upgrade: `sudo -u www-data php admin/cli/upgrade`
 
 **Note:** the user may be different to www-data on your system.
 
