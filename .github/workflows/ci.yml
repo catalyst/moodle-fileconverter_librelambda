@@ -6,6 +6,8 @@ on: [push, pull_request]
 jobs:
   ci:
     uses: catalyst/catalyst-moodle-workflows/.github/workflows/ci.yml@main
+    secrets:
+      moodle_org_token: ${{ secrets.MOODLE_ORG_TOKEN }}
     with:
       extra_plugin_runners: 'moodle-plugin-ci add-plugin catalyst/moodle-local_aws'
       disable_phpcpd: true
