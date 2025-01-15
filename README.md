@@ -1,4 +1,4 @@
-![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/catalyst/moodle-fileconverter_librelambda/ci.yml?branch=master)
+[![ci](https://github.com/catalyst/moodle-fileconverter_librelambda/actions/workflows/ci.yml/badge.svg?branch=MOODLE_34_STABLE)](https://github.com/catalyst/moodle-fileconverter_librelambda/actions/workflows/ci.yml?branch=MOODLE_34_STABLE)
 
 # Libre Lambda Document Converter #
 
