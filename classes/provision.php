@@ -23,8 +23,6 @@
  */
 namespace fileconverter_librelambda;
 
-defined('MOODLE_INTERNAL') || die();
-
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
 use Aws\CloudFormation\CloudFormationClient;
@@ -120,7 +118,7 @@ class provision {
      * @param string $region AWS Region to create the environment in.
      * @param string $stack  AWS Stack name
      */
-    public function __construct($keyid, $secret, $region, $stack=null) {
+    public function __construct($keyid, $secret, $region, $stack = null) {
         global $CFG;
 
         $this->keyid = $keyid;
@@ -160,14 +158,14 @@ class provision {
      * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
      */
-    protected function create_s3_client($handler=null) {
-        $connectionoptions = array(
+    protected function create_s3_client($handler = null) {
+        $connectionoptions = [
                 'version' => 'latest',
                 'region' => $this->region,
                 'credentials' => [
                         'key' => $this->keyid,
-                        'secret' => $this->secret
-                ]);
+                        'secret' => $this->secret,
+                ]];
 
         // Check if we are using the Moodle proxy.
         if ($this->useproxy) {
@@ -220,7 +218,7 @@ class provision {
      */
     protected function remove_resource_bucket() {
         $s3result = $this->s3client->listObjects([
-            'Bucket' => $this->resourcebucket
+            'Bucket' => $this->resourcebucket,
         ]);
         // If the bucket is not empty - empty it.
         if ($contents = $s3result['Contents']) {
@@ -248,7 +246,7 @@ class provision {
         }
 
         $this->s3client->deleteBucket([
-            'Bucket' => $this->resourcebucket
+            'Bucket' => $this->resourcebucket,
         ]);
     }
 
@@ -261,11 +259,11 @@ class provision {
      */
     protected function upload_resource($filepath) {
         $fileinfo = pathinfo($filepath);
-        $uploadparams = array(
+        $uploadparams = [
             'Bucket' => $this->resourcebucket,
             'Key' => $fileinfo['basename'],
             'SourceFile' => $filepath,
-        );
+        ];
 
         $putobject = $this->s3client->putObject($uploadparams);
         return $putobject['ObjectURL'];
@@ -277,14 +275,14 @@ class provision {
      * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\CloudFormation\CloudFormationClient
      */
-    protected function create_cloudformation_client($handler=null) {
-        $connectionoptions = array(
+    protected function create_cloudformation_client($handler = null) {
+        $connectionoptions = [
             'version' => 'latest',
             'region' => $this->region,
             'credentials' => [
                 'key' => $this->keyid,
-                'secret' => $this->secret
-            ]);
+                'secret' => $this->secret,
+            ]];
 
         // Check if we are using the Moodle proxy.
         if ($this->useproxy) {
@@ -321,11 +319,13 @@ class provision {
         }
 
         $template = str_replace(
-            '__STACK__', $this->stack,
+            '__STACK__',
+            $this->stack,
             file_get_contents($templatepath)
         );
         $template = str_replace(
-            '__BUCKET_PREFIX__', $this->bucketprefix,
+            '__BUCKET_PREFIX__',
+            $this->bucketprefix,
             $template
         );
 
@@ -336,15 +336,14 @@ class provision {
             }
 
             if ($exists) {
-                list($stackid, $outputs) = $this->update_stack($template);
+                [$stackid, $outputs] = $this->update_stack($template);
                 $result->message = get_string('provision:stackupdated', 'fileconverter_librelambda', $stackid);
             } else {
-                list($stackid, $outputs) = $this->create_stack($template);
+                [$stackid, $outputs] = $this->create_stack($template);
                 $result->message = get_string('provision:stackcreated', 'fileconverter_librelambda', $stackid);
             }
 
             return (object) array_merge((array) $result, $outputs);
-
         } catch (AwsException $e) {
             $result->status = false;
             $result->message = $e->getMessage() . ": " . $e->getAwsErrorMessage();
@@ -379,10 +378,10 @@ class provision {
             'CREATE_FAILED',
             'CREATE_COMPLETE',
             'DELETE_COMPLETE',
-            'ROLLBACK_COMPLETE'
+            'ROLLBACK_COMPLETE',
         ];
         if ($ready = $this->check_stack_ready($exitcodes)) {
-            list($stackstatus, $outputs) = $ready;
+            [$stackstatus, $outputs] = $ready;
 
             if ($stackstatus === 'CREATE_COMPLETE') {
                 return [$createstack['StackId'], $outputs];
@@ -426,10 +425,10 @@ class provision {
         $exitcodes = [
             'UPDATE_FAILED',
             'UPDATE_COMPLETE',
-            'ROLLBACK_COMPLETE'
+            'ROLLBACK_COMPLETE',
         ];
         if ($ready = $this->check_stack_ready($exitcodes)) {
-            list($stackstatus, $outputs) = $ready;
+            [$stackstatus, $outputs] = $ready;
 
             if ($stackstatus === 'UPDATE_COMPLETE') {
                 return [$updatestack['StackId'], $outputs];
@@ -483,7 +482,7 @@ class provision {
         sleep(static::$sleepbeforecheck);
 
         if ($ready = $this->check_stack_ready(['DELETE_COMPLETE', 'DELETE_FAILED'])) {
-            list($stackstatus, $outputs) = $ready;
+            [$stackstatus, $outputs] = $ready;
             $deleted = ($stackstatus === 'DELETE_COMPLETE');
         } else {
             $deleted = true; // We assume it is gone if there's no status.
@@ -518,7 +517,7 @@ class provision {
                 continue;
             }
 
-            list ($stackstatus, $outputs) = $res;
+            [$stackstatus, $outputs] = $res;
 
             // Exit in case terminal status is reported.
             if (in_array($stackstatus, $statuses, true)) {
@@ -541,7 +540,7 @@ class provision {
             return;
         }
 
-        list ($stackstatus, $outputs) = $res;
+        [$stackstatus, $outputs] = $res;
         return $stackstatus;
     }
 

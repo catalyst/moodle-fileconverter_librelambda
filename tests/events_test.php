@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * PHPUnit tests for Libre Lambda file converter.
  *
@@ -25,15 +24,8 @@
 
 namespace fileconverter_librelambda;
 
-defined('MOODLE_INTERNAL') || die();
-
-use Aws\Result;
-use Aws\MockHandler;
-use Aws\CommandInterface;
-use Psr\Http\Message\RequestInterface;
-use Aws\S3\Exception\S3Exception;
-use \core_files\conversion;
-use \context_module;
+use core_files\conversion;
+use context_module;
 
 /**
  * PHPUnit tests for Libre Lambda file converter.
@@ -42,8 +34,7 @@ use \context_module;
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class events_test extends \advanced_testcase {
-
+final class events_test extends \advanced_testcase {
     /**
      * Test start document conversion method.
      */
@@ -53,18 +44,19 @@ class events_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $instance->cmid,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => 8,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt',
+        ];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -75,18 +67,17 @@ class events_test extends \advanced_testcase {
         $conversion->create();
 
         // Standard Event parameters.
-        $eventinfo = array(
+        $eventinfo = [
             'context' => $context,
             'courseid' => $course->id,
-            'other' => array(
+            'other' => [
                 'sourcefileid' => $conversion->get('sourcefileid'),
                 'bucket' => 'input bucket',
                 'key' => $file->get_pathnamehash(),
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
-                'sourcefileid' => $conversion->get('sourcefileid'),
-                'status' => conversion::STATUS_IN_PROGRESS
-            ));
+                'status' => conversion::STATUS_IN_PROGRESS,
+            ]];
 
         $sink = $this->redirectEvents();
         $event = \fileconverter_librelambda\event\start_document_conversion::create($eventinfo);
@@ -109,18 +100,19 @@ class events_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $instance->cmid,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => 8,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt',
+        ];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -131,18 +123,17 @@ class events_test extends \advanced_testcase {
         $conversion->create();
 
         // Standard Event parameters.
-        $eventinfo = array(
+        $eventinfo = [
             'context' => $context,
             'courseid' => $course->id,
-            'other' => array(
+            'other' => [
                 'sourcefileid' => $conversion->get('sourcefileid'),
                 'bucket' => 'output bucket',
                 'key' => $file->get_pathnamehash(),
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
-                'sourcefileid' => $conversion->get('sourcefileid'),
-                'status' => conversion::STATUS_COMPLETE
-            ));
+                'status' => conversion::STATUS_COMPLETE,
+            ]];
 
         $sink = $this->redirectEvents();
         $event = \fileconverter_librelambda\event\poll_conversion_status::create($eventinfo);
@@ -154,5 +145,4 @@ class events_test extends \advanced_testcase {
         $this->assertEquals(conversion::STATUS_COMPLETE, $event->other['status']);
         $this->assertEquals('status', $event->action);
     }
-
 }

@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * PHPUnit tests for Libre Lambda file converter.
  *
@@ -34,9 +33,9 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
-use \core_files\conversion;
-use \context_module;
-use \ReflectionMethod;
+use core_files\conversion;
+use context_module;
+use ReflectionMethod;
 
 /**
  * PHPUnit tests for Libre Lambda file converter.
@@ -46,8 +45,7 @@ use \ReflectionMethod;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversMethod(\fileconverter_librelambda\converter::class, 'supports')]
-class converter_test extends \advanced_testcase {
-
+final class converter_test extends \advanced_testcase {
     /**
      * Test is_config_set method with missing configuration.
      */
@@ -57,7 +55,7 @@ class converter_test extends \advanced_testcase {
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_config_set');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
+        $result = $method->invoke(new \fileconverter_librelambda\converter(), $converter);
 
         $this->assertFalse($result);
     }
@@ -79,7 +77,7 @@ class converter_test extends \advanced_testcase {
         // Reflection magic as we are directly testing a private method.
         $method = new ReflectionMethod('\fileconverter_librelambda\converter', 'is_config_set');
         $method->setAccessible(true); // Allow accessing of private method.
-        $result = $method->invoke(new \fileconverter_librelambda\converter, $converter);
+        $result = $method->invoke(new \fileconverter_librelambda\converter(), $converter);
 
         $this->assertTrue($result);
     }
@@ -113,7 +111,7 @@ class converter_test extends \advanced_testcase {
     public function test_is_bucket_accessible_true() {
          // Set up the AWS mock.
          $mock = new MockHandler();
-         $mock->append(new Result(array()));
+         $mock->append(new Result([]));
 
          $converter = new \fileconverter_librelambda\converter();
          $converter->create_client($mock);
@@ -159,9 +157,9 @@ class converter_test extends \advanced_testcase {
     public function test_have_bucket_permissions_true() {
         // Set up the AWS mock.
         $mock = new MockHandler();
-        $mock->append(new Result(array()));
-        $mock->append(new Result(array()));
-        $mock->append(new Result(array()));
+        $mock->append(new Result([]));
+        $mock->append(new Result([]));
+        $mock->append(new Result([]));
 
         $converter = new \fileconverter_librelambda\converter();
         $converter->create_client($mock);
@@ -198,18 +196,19 @@ class converter_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => $instance->cmid,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt',
+        ];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -221,7 +220,7 @@ class converter_test extends \advanced_testcase {
 
         // Set up the AWS mock.
         $mock = new MockHandler();
-        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(new Result(['ObjectURL' => 's3://herpderp']));
 
         $converter = new \fileconverter_librelambda\converter();
         $converter->create_client($mock);
@@ -240,18 +239,19 @@ class converter_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => $instance->cmid,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt',
+        ];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -263,7 +263,7 @@ class converter_test extends \advanced_testcase {
 
         // Set up the AWS mock.
         $mock = new MockHandler();
-        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(new Result(['ObjectURL' => 's3://herpderp']));
 
         $converter = new \fileconverter_librelambda\converter();
         $converter->create_client($mock);
@@ -289,18 +289,19 @@ class converter_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => $instance->cmid,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt',
+        ];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -312,9 +313,9 @@ class converter_test extends \advanced_testcase {
 
         // Set up the AWS mock.
         $mock = new MockHandler();
-        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(new Result(['ObjectURL' => 's3://herpderp']));
         $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-            return new S3Exception('Mock exception', $cmd, array('code' => 'NoSuchKey'));
+            return new S3Exception('Mock exception', $cmd, ['code' => 'NoSuchKey']);
         });
 
         $converter = new \fileconverter_librelambda\converter();
@@ -339,18 +340,19 @@ class converter_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => $instance->cmid,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt',
+        ];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -363,9 +365,9 @@ class converter_test extends \advanced_testcase {
 
         // Set up the AWS mock.
         $mock = new MockHandler();
-        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(new Result(['ObjectURL' => 's3://herpderp']));
         $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-            return new S3Exception('Mock exception', $cmd, array('code' => 'NoSuchKey'));
+            return new S3Exception('Mock exception', $cmd, ['code' => 'NoSuchKey']);
         });
 
         $converter = new \fileconverter_librelambda\converter();
@@ -380,7 +382,6 @@ class converter_test extends \advanced_testcase {
         $convert = $converter->poll_conversion_status($conversion);
 
         $this->assertEquals(conversion::STATUS_IN_PROGRESS, $conversion->get('status'));
-
     }
 
     /**
@@ -393,18 +394,19 @@ class converter_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => $instance->cmid,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt',
+        ];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -417,9 +419,9 @@ class converter_test extends \advanced_testcase {
 
         // Set up the AWS mock.
         $mock = new MockHandler();
-        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(new Result(['ObjectURL' => 's3://herpderp']));
         $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-            return new S3Exception('Mock exception', $cmd, array('code' => 'FAIL'));
+            return new S3Exception('Mock exception', $cmd, ['code' => 'FAIL']);
         });
 
         $converter = new \fileconverter_librelambda\converter();
@@ -434,7 +436,6 @@ class converter_test extends \advanced_testcase {
         $convert = $converter->poll_conversion_status($conversion);
 
         $this->assertEquals(conversion::STATUS_FAILED, $conversion->get('status'));
-
     }
 
     /**
@@ -483,18 +484,18 @@ class converter_test extends \advanced_testcase {
 
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assign');
-        $instance = $generator->create_instance(array('course' => $course->id));
+        $instance = $generator->create_instance(['course' => $course->id]);
         $context = context_module::instance($instance->cmid);
 
         // Create file to analyze.
         $fs = get_file_storage();
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'assignsubmission_file',
             'filearea' => 'submission_files',
             'itemid' => $instance->cmid,
             'filepath' => '/',
-            'filename' => 'testsubmission.odt');
+            'filename' => 'testsubmission.odt'];
         $fileurl = $CFG->dirroot . '/files/converter/librelambda/tests/fixtures/testsubmission.odt';
         $file = $fs->create_file_from_pathname($filerecord, $fileurl);
 
@@ -517,9 +518,9 @@ class converter_test extends \advanced_testcase {
 
         // Setup AWS mocking.
         $mock = new MockHandler();
-        $mock->append(new Result(array('ObjectURL' => 's3://herpderp')));
+        $mock->append(new Result(['ObjectURL' => 's3://herpderp']));
         $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-            return new S3Exception('Mock exception', $cmd, array('code' => 'NoSuchKey'));
+            return new S3Exception('Mock exception', $cmd, ['code' => 'NoSuchKey']);
         });
 
         $converter = new \fileconverter_librelambda\converter();
@@ -552,7 +553,7 @@ class converter_test extends \advanced_testcase {
      *
      * @return array
      */
-    public static function supports_provider() {
+    public static function supports_provider(): array {
         return [
             ['doc', true], ['DOC', true],
             ['docm', false], ['DOCM', false],

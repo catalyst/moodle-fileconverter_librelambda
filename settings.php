@@ -30,8 +30,10 @@ if ($hassiteconfig) {
     if ($PAGE->has_set_url()) {
         $settingsurl = new moodle_url('/admin/settings.php');
         $thisurl = $PAGE->url;
-        if ($settingsurl->compare($thisurl,  URL_MATCH_BASE) &&
-                $thisurl->get_param('section') == 'fileconverterlibrelambda') {
+        if (
+            $settingsurl->compare($thisurl, URL_MATCH_BASE) &&
+                $thisurl->get_param('section') == 'fileconverterlibrelambda'
+        ) {
             $librelambdapage = true;
         }
     }
@@ -40,49 +42,72 @@ if ($hassiteconfig) {
     $clientcheck = $librelambdapage ? $converter->define_client_check() : '';
     $sdkcheck = $librelambdapage ? $converter->define_client_check_sdk() : '';
 
-    $settings->add(new admin_setting_heading('fileconverter_librelambda/generalsettings',
-            new lang_string('settings:generalheader', 'fileconverter_librelambda'), ''));
+    $settings->add(new admin_setting_heading(
+        'fileconverter_librelambda/generalsettings',
+        new lang_string('settings:generalheader', 'fileconverter_librelambda'),
+        ''
+    ));
 
-    $settings->add(new admin_setting_configduration('fileconverter_librelambda/conversion_timeout',
-            get_string('settings:conversion_timeout', 'fileconverter_librelambda'),
-            get_string('settings:conversion_timeout_help', 'fileconverter_librelambda'),
-            3600,
-            HOURSECS));
+    $settings->add(new admin_setting_configduration(
+        'fileconverter_librelambda/conversion_timeout',
+        get_string('settings:conversion_timeout', 'fileconverter_librelambda'),
+        get_string('settings:conversion_timeout_help', 'fileconverter_librelambda'),
+        3600,
+        HOURSECS
+    ));
 
-    $settings->add(new admin_setting_configcheckbox('fileconverter_librelambda/useproxy',
+    $settings->add(new admin_setting_configcheckbox(
+        'fileconverter_librelambda/useproxy',
         get_string('settings:useproxy', 'fileconverter_librelambda'),
-        get_string('settings:useproxy_help', 'fileconverter_librelambda'), 1));
+        get_string('settings:useproxy_help', 'fileconverter_librelambda'),
+        1
+    ));
 
-    $settings->add(new \admin_setting_heading('fileconverter_librelambda/aws',
-        new \lang_string('settings:aws:header', 'fileconverter_librelambda'), $clientcheck));
+    $settings->add(new \admin_setting_heading(
+        'fileconverter_librelambda/aws',
+        new \lang_string('settings:aws:header', 'fileconverter_librelambda'),
+        $clientcheck
+    ));
 
-    $settings->add(new \admin_setting_configcheckbox('fileconverter_librelambda/usesdkcreds',
-        new \lang_string('settings:aws:usesdkcreds', 'fileconverter_librelambda'), $sdkcheck, ''));
+    $settings->add(new \admin_setting_configcheckbox(
+        'fileconverter_librelambda/usesdkcreds',
+        new \lang_string('settings:aws:usesdkcreds', 'fileconverter_librelambda'),
+        $sdkcheck,
+        ''
+    ));
 
     if (!$converter->get_usesdkcreds()) {
         // Basic settings.
-        $settings->add(new admin_setting_configtext('fileconverter_librelambda/api_key',
+        $settings->add(new admin_setting_configtext(
+            'fileconverter_librelambda/api_key',
             get_string('settings:aws:key', 'fileconverter_librelambda'),
             get_string('settings:aws:key_help', 'fileconverter_librelambda'),
-            ''));
+            ''
+        ));
 
-        $settings->add(new admin_setting_configpasswordunmask('fileconverter_librelambda/api_secret',
+        $settings->add(new admin_setting_configpasswordunmask(
+            'fileconverter_librelambda/api_secret',
             get_string('settings:aws:secret', 'fileconverter_librelambda'),
             get_string('settings:aws:secret_help', 'fileconverter_librelambda'),
-            ''));
+            ''
+        ));
     }
 
-    $settings->add(new admin_setting_configtext('fileconverter_librelambda/s3_input_bucket',
-            get_string('settings:aws:input_bucket', 'fileconverter_librelambda'),
-            get_string('settings:aws:input_bucket_help', 'fileconverter_librelambda'),
-            ''));
+    $settings->add(new admin_setting_configtext(
+        'fileconverter_librelambda/s3_input_bucket',
+        get_string('settings:aws:input_bucket', 'fileconverter_librelambda'),
+        get_string('settings:aws:input_bucket_help', 'fileconverter_librelambda'),
+        ''
+    ));
 
-    $settings->add(new admin_setting_configtext('fileconverter_librelambda/s3_output_bucket',
-            get_string('settings:aws:output_bucket', 'fileconverter_librelambda'),
-            get_string('settings:aws:output_bucket_help', 'fileconverter_librelambda'),
-            ''));
+    $settings->add(new admin_setting_configtext(
+        'fileconverter_librelambda/s3_output_bucket',
+        get_string('settings:aws:output_bucket', 'fileconverter_librelambda'),
+        get_string('settings:aws:output_bucket_help', 'fileconverter_librelambda'),
+        ''
+    ));
 
-    $regionoptions = array(
+    $regionoptions = [
         'us-east-1'      => 'us-east-1 (N. Virginia)',
         'us-east-2'      => 'us-east-2 (Ohio)',
         'us-west-1'      => 'us-west-1 (N. California)',
@@ -103,13 +128,14 @@ if ($hassiteconfig) {
         'eu-west-1'      => 'eu-west-1 (Ireland)',
         'eu-west-2'      => 'eu-west-2 (London)',
         'eu-west-3'      => 'eu-west-3 (Paris)',
-        'sa-east-1'      => 'sa-east-1 (Sao Paulo)'
-    );
+        'sa-east-1'      => 'sa-east-1 (Sao Paulo)',
+    ];
 
-    $settings->add(new admin_setting_configselect('fileconverter_librelambda/api_region',
-            get_string('settings:aws:region', 'fileconverter_librelambda'),
-            get_string('settings:aws:region_help', 'fileconverter_librelambda'),
-            'ap-southeast-2',
-            $regionoptions));
-
+    $settings->add(new admin_setting_configselect(
+        'fileconverter_librelambda/api_region',
+        get_string('settings:aws:region', 'fileconverter_librelambda'),
+        get_string('settings:aws:region_help', 'fileconverter_librelambda'),
+        'ap-southeast-2',
+        $regionoptions
+    ));
 }

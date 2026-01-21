@@ -27,8 +27,8 @@
 define('CLI_SCRIPT', true);
 define('CACHE_DISABLE_ALL', true);
 
-require(__DIR__.'/../../../../config.php');
-require_once($CFG->libdir.'/clilib.php');
+require(__DIR__ . '/../../../../config.php');
+require_once($CFG->libdir . '/clilib.php');
 
 $defaultstack = \fileconverter_librelambda\provision::DEFAULT_STACK_NAME;
 $help = "Command line Librelmbda provision.
@@ -66,7 +66,8 @@ If you want to replace the stack use \"--replace-stack\" option
 ";
 $stacknotexistsmsg = "Stack does not exsist.";
 
-/** Abort function
+/**
+ * Abort function
  * @param string $msg
  */
 function abort(string $msg) {
@@ -74,7 +75,8 @@ function abort(string $msg) {
     die;
 }
 
-/** exec() with return value check
+/**
+ * exec() with return value check
  * @param string $command
  */
 function os_exec(string $command) {
@@ -87,8 +89,8 @@ function os_exec(string $command) {
 echo PHP_EOL;
 
 // Get cli options.
-list($options, $unrecognized) = cli_get_params(
-    array(
+[$options, $unrecognized] = cli_get_params(
+    [
         'keyid'           => null,
         'secret'          => null,
         'region'          => null,
@@ -97,10 +99,10 @@ list($options, $unrecognized) = cli_get_params(
         'remove-stack'    => false,
         'set-config'      => false,
         'help'            => false,
-    ),
-    array(
-        'h' => 'help'
-    )
+    ],
+    [
+        'h' => 'help',
+    ]
 );
 
 if ($unrecognized) {
@@ -132,10 +134,10 @@ if ($options['remove-stack']) {
 
     $stack = $provisioner->stack_name();
     echo "Do you really want to remove \"$stack\" stack? [Type \"yes\" to confirm]: ";
-    $confirmation = trim( fgets(STDIN) );
+    $confirmation = trim(fgets(STDIN));
     if (strtolower($confirmation) !== 'yes') {
          // The user did not say 'yes'.
-         exit (1);
+         exit(1);
     }
 
     $removalresponse = $provisioner->remove_stack();
@@ -144,14 +146,14 @@ if ($options['remove-stack']) {
     } else {
         echo "Removed" . PHP_EOL . PHP_EOL;
     }
-    exit (0);
+    exit(0);
 }
 
 if (!$options['replace-stack'] && $stackexists) {
     abort("$stackexistsmsg\n$help");
 }
 
-// check out latest moodle-fileconverter_librelambda-aws_stack
+// Check out latest moodle-fileconverter_librelambda-aws_stack.
 $repo = "https://github.com/catalyst/moodle-fileconverter_librelambda-aws_stack.git";
 $stackdir = sys_get_temp_dir() . '/fileconverter_librelambda-aws_stack';
 if (!is_dir($stackdir)) {

@@ -23,11 +23,8 @@
  */
 namespace fileconverter_librelambda;
 
-defined('MOODLE_INTERNAL') || die();
-
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
-use Aws\Iam\Exception\IamException;
 
 /**
  * Class for provisioning AWS resources.
@@ -37,7 +34,6 @@ use Aws\Iam\Exception\IamException;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tester {
-
     /**
      * AWS API Access Key ID.
      *
@@ -107,7 +103,6 @@ class tester {
         $this->outputbucket = $outputbucket;
 
         $this->useproxy = get_config('fileconverter_librelambda', 'useproxy');
-
     }
 
     /**
@@ -120,7 +115,7 @@ class tester {
         $bucketexists = true;
 
         try {
-            $this->s3client->headBucket(array('Bucket' => $bucketname));
+            $this->s3client->headBucket(['Bucket' => $bucketname]);
         } catch (S3Exception $e) {
             // Check the error code. If code = NotFound, this means the bucket
             // does not exists.
@@ -128,7 +123,6 @@ class tester {
             if ($errorcode == 'NotFound') {
                 $bucketexists = false;
             }
-
         }
         return $bucketexists;
     }
@@ -139,11 +133,11 @@ class tester {
      * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
      */
-    public function create_s3_client($handler=null) {
-        $connectionoptions = array('version' => 'latest', 'region' => $this->region);
+    public function create_s3_client($handler = null) {
+        $connectionoptions = ['version' => 'latest', 'region' => $this->region];
 
         if (!$this->usesdkcreds) {
-            $connectionoptions['credentials'] = array('key' => $this->keyid, 'secret' => $this->secret);
+            $connectionoptions['credentials'] = ['key' => $this->keyid, 'secret' => $this->secret];
         }
 
         // Check if we are using the Moodle proxy.
@@ -227,10 +221,10 @@ class tester {
         $client = $this->s3client;
 
         $filekey = $this->file_key($filepath);
-        $downloadparams = array(
+        $downloadparams = [
             'Bucket' => $this->outputbucket, // Required.
             'Key' => $filekey, // Required.
-        );
+        ];
 
         // Check for file until file available,
         // or we timeout.
@@ -257,7 +251,7 @@ class tester {
         }
 
         // Check mime type of downloaded object.
-        $tmppath = tempnam(sys_get_temp_dir(), 'converted').'.pdf';
+        $tmppath = tempnam(sys_get_temp_dir(), 'converted') . '.pdf';
         $tmpfile = fopen($tmppath, 'w');
         fwrite($tmpfile, $getobject['Body']);
         $mimetype = mime_content_type($tmppath);
@@ -303,7 +297,6 @@ class tester {
         }
 
         return $result;
-
     }
 
     /**

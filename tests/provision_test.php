@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * PHPUnit tests for Libre Lambda AWS provision.
  *
@@ -27,86 +26,16 @@ namespace fileconverter_librelambda;
 
 defined('MOODLE_INTERNAL') || die();
 
-use Aws\MockHandler;
 use Aws\Result;
 use Aws\CommandInterface;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
 use Aws\CloudFormation\Exception\CloudFormationException;
 
-/**
- * Mock class to test for Libre Lambda AWS provision.
- *
- * @package     fileconverter_librelambda
- * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class provision_mock extends provision {
-    /**
-     *
-     * @var MockHandler
-     */
-    public $mocks3handler;
+defined('MOODLE_INTERNAL') || die();
 
-    /**
-     *
-     * @var MockHandler
-     */
-    public $mockcloudformationhandler;
-
-    /**
-     *
-     * @var int
-     */
-    protected static $sleepbeforecheck = 0;
-
-    /**
-     *
-     * @var string
-     */
-    public $resourcebucket;
-
-    /**
-     * The constructor for the class
-     *
-     * @param string $stack The stack name
-     */
-    public function __construct($stack=null) {
-        $keyid = 'AAAAAAAAAAAA';
-        $secret = 'aaaaaaaaaaaaaaaaaa';
-        $region = 'ap-southeast-2';
-
-        parent::__construct($keyid, $secret, $region, $stack);
-
-        // Set up the AWS mocks.
-        $this->mocks3handler = new MockHandler();
-        $this->s3client = $this->create_s3_client($this->mocks3handler);
-        $this->mockcloudformationhandler = new MockHandler();
-        $this->cloudformationclient = $this->create_cloudformation_client($this->mockcloudformationhandler);
-    }
-
-    /**
-     * Check if the bucket already exists in AWS.
-     * Upgrade to public.
-     *
-     * @param string $bucketname The name of the bucket to check.
-     * @return bool $bucketexists The result of the check.
-     */
-    public function check_bucket_exists($bucketname) {
-        return parent::check_bucket_exists($bucketname);
-    }
-
-    /**
-     * Create an S3 Bucket in AWS.
-     * Upgrade to public.
-     *
-     * @return \stdClass $result The result of the bucket creation.
-     */
-    public function create_resource_bucket() {
-        return parent::create_resource_bucket();
-    }
-}
-
+// This is needed. File will not be automatically included.
+require_once(__DIR__ . "/provision_mock.php");
 
 /**
  * PHPUnit tests for Libre Lambda AWS provision.
@@ -115,8 +44,7 @@ class provision_mock extends provision {
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provision_test extends \advanced_testcase {
-
+final class provision_test extends \advanced_testcase {
     /**
      * Test the does bucket exist method. Should return false.
      * We mock out the S3 client response as we are not trying to connect to the live AWS API.
@@ -218,7 +146,7 @@ class provision_test extends \advanced_testcase {
                 "You can either:",
                 "  Checkout $repo in $stackdir",
                 "  or",
-                "  Run php cli/provision.php that will do that for you."
+                "  Run php cli/provision.php that will do that for you.",
             ]));
         }
         return $stackdir;
@@ -247,11 +175,11 @@ class provision_test extends \advanced_testcase {
                 'Outputs' => [
                     [
                         'OutputKey' => 'InputBucket',
-                        'OutputValue' => 'InputBucket'
+                        'OutputValue' => 'InputBucket',
                     ],
                     [
                         'OutputKey' => 'OutputBucket',
-                        'OutputValue' => 'OutputBucket'
+                        'OutputValue' => 'OutputBucket',
                     ],
                 ],
             ]],
@@ -302,11 +230,11 @@ class provision_test extends \advanced_testcase {
                 'Outputs' => [
                     [
                         'OutputKey' => 'InputBucket',
-                        'OutputValue' => 'InputBucket'
+                        'OutputValue' => 'InputBucket',
                     ],
                     [
                         'OutputKey' => 'OutputBucket',
-                        'OutputValue' => 'OutputBucket'
+                        'OutputValue' => 'OutputBucket',
                     ],
                 ],
             ]],
@@ -353,7 +281,7 @@ class provision_test extends \advanced_testcase {
         $provisioner->mocks3handler->append(new Result([ // listObjects.
             'Contents' => [
                 ['Key' => $filename],
-            ]
+            ],
         ]));
         $provisioner->mocks3handler->append(new Result([ // deleteObjects.
             'Deleted' => [

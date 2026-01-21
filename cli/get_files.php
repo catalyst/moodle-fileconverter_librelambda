@@ -28,30 +28,32 @@
 define('CLI_SCRIPT', true);
 define('CACHE_DISABLE_ALL', true);
 
-require(__DIR__.'/../../../../config.php');
-require_once($CFG->libdir.'/clilib.php');
+require(__DIR__ . '/../../../../config.php');
+require_once($CFG->libdir . '/clilib.php');
 
 // Now get cli options.
-list($options, $unrecognized) = cli_get_params(
-    array(
+[$options, $unrecognized] = cli_get_params(
+    [
         'keyid'             => false,
         'secret'            => false,
         'help'              => false,
         'region'            => false,
         'bucket'            => '',
-    ),
-    array(
-        'h' => 'help'
-    )
-    );
+    ],
+    [
+        'h' => 'help',
+    ]
+);
 
 if ($unrecognized) {
     $unrecognized = implode("\n  ", $unrecognized);
     cli_error(get_string('cliunknowoption', 'admin', $unrecognized));
 }
 
-if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']
-    || !$options['bucket']) {
+if (
+    $options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']
+    || !$options['bucket']
+) {
         $help = "This command line script will get all document files from S3 in a site that
 uses the object fs plugin and download them locally.
 
