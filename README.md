@@ -27,9 +27,10 @@ The following sections outline the steps that need to be followed to install the
 This plugin currently supports Moodle:
 
 | Moodle version | Branch            |
------------------|-------------------|
+----------------|-------------------|
 | Moodle 3.4+    | MOODLE_34_STABLE  |
 | Moodle 4.5+    | MOODLE_405_STABLE |
+| Moodle 5.0+    | MOODLE_500_STABLE |
 
 ## Plugin Installation
 The following steps will help you install this plugin into your Moodle instance.

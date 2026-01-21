@@ -30,6 +30,8 @@ defined('MOODLE_INTERNAL') || die();
 use Aws\Result;
 use Aws\MockHandler;
 use Aws\CommandInterface;
+use PHPUnit\Framework\Attributes\CoversMethod;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Http\Message\RequestInterface;
 use Aws\S3\Exception\S3Exception;
 use \core_files\conversion;
@@ -43,6 +45,7 @@ use \ReflectionMethod;
  * @copyright   2018 Matt Porritt <mattp@catalyst-au.net>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[CoversMethod(\fileconverter_librelambda\converter::class, 'supports')]
 class converter_test extends \advanced_testcase {
 
     /**
@@ -549,7 +552,7 @@ class converter_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function supports_provider() {
+    public static function supports_provider() {
         return [
             ['doc', true], ['DOC', true],
             ['docm', false], ['DOCM', false],
@@ -582,13 +585,11 @@ class converter_test extends \advanced_testcase {
     /**
      * Test supports method of converter class.
      *
-     * @covers       \fileconverter_librelambda\converter::supports
-     * @dataProvider supports_provider
-     *
      * @param string $format The format to test.
      * @param bool $expected The expected result.
      *
      */
+    #[DataProvider('supports_provider')]
     public function test_supports($format, $expected) {
         // Check supported format.
         $this->assertEquals($expected, \fileconverter_librelambda\converter::supports($format, 'pdf'));
