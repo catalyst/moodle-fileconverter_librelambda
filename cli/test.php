@@ -25,12 +25,12 @@
 define('CLI_SCRIPT', true);
 define('CACHE_DISABLE_ALL', true);
 
-require(__DIR__.'/../../../../config.php');
-require_once($CFG->libdir.'/clilib.php');
+require(__DIR__ . '/../../../../config.php');
+require_once($CFG->libdir . '/clilib.php');
 
 // Now get cli options.
-list($options, $unrecognized) = cli_get_params(
-    array(
+[$options, $unrecognized] = cli_get_params(
+    [
         'keyid'              => false,
         'secret'             => false,
         'help'               => false,
@@ -38,11 +38,11 @@ list($options, $unrecognized) = cli_get_params(
         'input-bucket'       => '',
         'output-bucket'      => '',
         'file'               => '',
-        'use-sdk-creds'      => 0
-    ),
-    array(
-        'h' => 'help'
-    )
+        'use-sdk-creds'      => 0,
+    ],
+    [
+        'h' => 'help',
+    ]
 );
 
 if ($unrecognized) {
@@ -95,16 +95,18 @@ Example:
 ";
 
 if ($options['help']) {
-    echo $help.$sdkexample.$example;
+    echo $help . $sdkexample . $example;
     die;
 } else if ($options['use-sdk-creds']) {
     if (!$options['region'] || !$options['input-bucket'] || !$options['output-bucket']) {
-        echo $help.$sdkexample;
+        echo $help . $sdkexample;
         die;
     }
-} else if (!$options['keyid'] || !$options['secret'] || !$options['region']
-|| !$options['input-bucket'] || !$options['output-bucket']) {
-    echo $help.$example;
+} else if (
+    !$options['keyid'] || !$options['secret'] || !$options['region']
+    || !$options['input-bucket'] || !$options['output-bucket']
+) {
+    echo $help . $example;
     die;
 }
 
@@ -114,13 +116,14 @@ $tester = new \fileconverter_librelambda\tester(
     $options['region'],
     $options['input-bucket'],
     $options['output-bucket'],
-    $options['use-sdk-creds']);
+    $options['use-sdk-creds']
+);
 
 // Upload file to input S3 bucket.
 cli_heading(get_string('test:uploadfile', 'fileconverter_librelambda'));
 
 $uploadresposnse = $tester->upload_file($options['file']);
-if ($uploadresposnse->code != 0 ) {
+if ($uploadresposnse->code != 0) {
     $errormsg = $uploadresposnse->code . ': ' . $uploadresposnse->message;
     throw new \moodle_exception($errormsg);
     exit(1);
@@ -131,7 +134,7 @@ if ($uploadresposnse->code != 0 ) {
 echo get_string('test:conversioncheck', 'fileconverter_librelambda') . PHP_EOL . PHP_EOL;
 sleep(60); // No way it's going to be ready in less than a minute.
 $conversionresposnse = $tester->conversion_check($options['file']);
-if ($conversionresposnse->code != 0 ) {
+if ($conversionresposnse->code != 0) {
     $errormsg = $conversionresposnse->code . ': ' . $conversionresposnse->message;
     throw new \moodle_exception($errormsg);
     exit(1);

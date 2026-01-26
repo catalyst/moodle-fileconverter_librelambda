@@ -31,7 +31,6 @@ use core\task\scheduled_task;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class convert_submissions extends scheduled_task {
-
     /**
      * Get a descriptive name for this task (shown to admins).
      *
@@ -49,15 +48,14 @@ class convert_submissions extends scheduled_task {
         global $DB;
         mtrace('LibreLambda: Processing pending document conversions');
 
-        $params = array(
+        $params = [
             'converter' => '\fileconverter_librelambda\converter',
-            'status' => '1'
-        );
+            'status' => '1',
+        ];
         $pendingconversions = $DB->get_recordset('file_conversion', $params, 'sourcefileid DESC', 'sourcefileid, targetformat');
 
         $fs = get_file_storage();
         foreach ($pendingconversions as $pendingconversion) {
-
             $file = $fs->get_file_by_id($pendingconversion->sourcefileid);
             if ($file) {
                 mtrace('LibreLambda: Processing conversions for file id: ' . $pendingconversion->sourcefileid);
@@ -93,5 +91,4 @@ class convert_submissions extends scheduled_task {
 
         $pendingconversions->close();
     }
-
 }

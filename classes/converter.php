@@ -23,11 +23,8 @@
  */
 namespace fileconverter_librelambda;
 
-defined('MOODLE_INTERNAL') || die();
-
-use \core_files\conversion;
+use core_files\conversion;
 use Aws\S3\S3Client;
-use Aws\S3\Exception\S3Exception;
 
 /**
  * Class for converting files between different formats using unoconv.
@@ -61,7 +58,7 @@ class converter implements \core_files\converter_interface {
 
     /** @var array $export List of supported export file formats */
     private static $exports = [
-        'pdf' => 'application/pdf'
+        'pdf' => 'application/pdf',
     ];
 
     /**
@@ -79,7 +76,7 @@ class converter implements \core_files\converter_interface {
 
     /**
      *
-     * @var integer status of current conversion.
+     * @var int status of current conversion.
      */
     public $status;
 
@@ -96,12 +93,12 @@ class converter implements \core_files\converter_interface {
      * @param \GuzzleHttp\Handler $handler Optional handler.
      * @return \Aws\S3\S3Client
      */
-    public function create_client($handler=null) {
-        $connectionoptions = array('version' => 'latest',
-                            'region' => isset($this->config->api_region) ? $this->config->api_region : 'ap-southeast-2');
+    public function create_client($handler = null) {
+        $connectionoptions = ['version' => 'latest',
+                            'region' => isset($this->config->api_region) ? $this->config->api_region : 'ap-southeast-2'];
 
         if (isset($this->config->usesdkcreds) && !$this->config->usesdkcreds) {
-            $connectionoptions['credentials'] = array('key' => $this->config->api_key, 'secret' => $this->config->api_secret);
+            $connectionoptions['credentials'] = ['key' => $this->config->api_key, 'secret' => $this->config->api_secret];
         }
 
         // Check if we are using the Moodle proxy.
@@ -158,17 +155,21 @@ class converter implements \core_files\converter_interface {
     private function is_config_set() {
         $isset = true;
         if ($this->get_usesdkcreds()) {
-            if (empty($this->config->s3_input_bucket) ||
+            if (
+                empty($this->config->s3_input_bucket) ||
                 empty($this->config->s3_output_bucket) ||
-                empty($this->config->api_region)) {
+                empty($this->config->api_region)
+            ) {
                 return false;
             }
         } else {
-            if (empty($this->config->api_key) ||
+            if (
+                empty($this->config->api_key) ||
                 empty($this->config->api_secret) ||
                 empty($this->config->s3_input_bucket) ||
                 empty($this->config->s3_output_bucket) ||
-                empty($this->config->api_region)) {
+                empty($this->config->api_region)
+            ) {
                 return false;
             }
         }
@@ -189,14 +190,14 @@ class converter implements \core_files\converter_interface {
         $connection->message = '';
 
         try {
-            $result = $this->client->headBucket(array(
-                'Bucket' => $bucket));
+            $result = $this->client->headBucket([
+                'Bucket' => $bucket]);
 
             $connection->message = get_string('settings:connectionsuccess', 'fileconverter_librelambda');
         } catch (\Exception $e) {
             $connection->success = false;
             $details = $this->get_exception_details($e);
-            $connection->message = get_string('settings:connectionfailure', 'fileconverter_librelambda') .' '. $details;
+            $connection->message = get_string('settings:connectionfailure', 'fileconverter_librelambda') . ' ' . $details;
         }
 
         return $connection;
@@ -213,44 +214,44 @@ class converter implements \core_files\converter_interface {
     private function have_bucket_permissions($bucket) {
         $permissions = new \stdClass();
         $permissions->success = true;
-        $permissions->messages = array();
+        $permissions->messages = [];
 
         try {
-            $result = $this->client->putObject(array(
+            $result = $this->client->putObject([
                 'Bucket' => $bucket,
                 'Key' => 'permissions_check_file',
-                'Body' => 'test content'));
+                'Body' => 'test content']);
         } catch (\Exception $e) {
             $details = $this->get_exception_details($e);
-            $permissions->messages[] = get_string('settings:writefailure', 'fileconverter_librelambda') .' '. $details;
+            $permissions->messages[] = get_string('settings:writefailure', 'fileconverter_librelambda') . ' ' . $details;
             $permissions->success = false;
         }
 
         try {
-            $result = $this->client->getObject(array(
+            $result = $this->client->getObject([
                 'Bucket' => $bucket,
-                'Key' => 'permissions_check_file'));
+                'Key' => 'permissions_check_file']);
         } catch (\Exception $e) {
             $errorcode = $e->getAwsErrorCode();
             // Write could have failed.
             if ($errorcode !== 'NoSuchKey') {
                 $details = $this->get_exception_details($e);
-                $permissions->messages[] = get_string('settings:readfailure', 'fileconverter_librelambda') .' '. $details;
+                $permissions->messages[] = get_string('settings:readfailure', 'fileconverter_librelambda') . ' ' . $details;
                 $permissions->success = false;
             }
         }
 
         try {
-            $result = $this->client->deleteObject(array(
+            $result = $this->client->deleteObject([
                 'Bucket' => $bucket,
-                'Key' => 'permissions_check_file'));
+                'Key' => 'permissions_check_file']);
             $permissions->messages[] = get_string('settings:deletesuccess', 'fileconverter_librelambda');
         } catch (\Exception $e) {
             $errorcode = $e->getAwsErrorCode();
             // Something else went wrong.
             if ($errorcode !== 'AccessDenied') {
                 $details = $this->get_exception_details($e);
-                $permissions->messages[] = get_string('settings:deleteerror', 'fileconverter_librelambda') .' '. $details;
+                $permissions->messages[] = get_string('settings:deleteerror', 'fileconverter_librelambda') . ' ' . $details;
             }
         }
 
@@ -266,14 +267,13 @@ class converter implements \core_files\converter_interface {
      * @param string $objectkey The key of the object to delete.
      */
     private function delete_converted_file($objectkey) {
-        $deleteparams = array(
+        $deleteparams = [
             'Bucket' => $this->config->s3_output_bucket, // Required.
             'Key' => $objectkey, // Required.
-        );
+        ];
 
         $s3client = $this->create_client();
         $s3client->deleteObject($deleteparams);
-
     }
 
     /**
@@ -304,16 +304,16 @@ class converter implements \core_files\converter_interface {
     public function start_document_conversion(\core_files\conversion $conversion) {
         $file = $conversion->get_sourcefile();
 
-        $uploadparams = array(
+        $uploadparams = [
             'Bucket' => $this->config->s3_input_bucket, // Required.
             'Key' => $file->get_pathnamehash(), // Required.
             'Body' => $file->get_content_file_handle(), // Required.
-            'Metadata' => array(
+            'Metadata' => [
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
                 'sourcefileid' => $conversion->get('sourcefileid'),
-            )
-        );
+            ],
+        ];
 
         // Upload to S3 input bucket and set status to in progress, or failed if not good upload.
         $s3client = $this->create_client();
@@ -328,18 +328,19 @@ class converter implements \core_files\converter_interface {
         $conversion->update();
 
         // Trigger event.
-        list($context, $course, $cm) = get_context_info_array($file->get_contextid());
-        $eventinfo = array(
+        [$context, $course, $cm] = get_context_info_array($file->get_contextid());
+        $eventinfo = [
             'context' => $context,
             'courseid' => $course->id,
-            'other' => array(
+            'other' => [
                 'sourcefileid' => $conversion->get('sourcefileid'),
                 'bucket' => $this->config->s3_input_bucket,
                 'key' => $file->get_pathnamehash(),
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
-                'status' => $this->status
-            ));
+                'status' => $this->status,
+            ],
+        ];
         $event = \fileconverter_librelambda\event\start_document_conversion::create($eventinfo);
         $event->trigger();
 
@@ -355,8 +356,10 @@ class converter implements \core_files\converter_interface {
     public function poll_conversion_status(conversion $conversion) {
 
         // If conversion is complete or failed return early.
-        if ($conversion->get('status') == conversion::STATUS_COMPLETE
-            || $conversion->get('status') == conversion::STATUS_FAILED) {
+        if (
+            $conversion->get('status') == conversion::STATUS_COMPLETE
+            || $conversion->get('status') == conversion::STATUS_FAILED
+        ) {
             return $this;
         }
 
@@ -364,11 +367,11 @@ class converter implements \core_files\converter_interface {
         $tmpdir = make_request_directory();
         $saveas = $tmpdir . '/' . $file->get_pathnamehash();
 
-        $downloadparams = array(
+        $downloadparams = [
             'Bucket' => $this->config->s3_output_bucket, // Required.
             'Key' => $file->get_pathnamehash(), // Required.
-            'SaveAs' => $saveas
-        );
+            'SaveAs' => $saveas,
+        ];
 
         // Check output bucket for file.
         $s3client = $this->create_client();
@@ -388,28 +391,27 @@ class converter implements \core_files\converter_interface {
                 $conversion->set('status', conversion::STATUS_FAILED);
                 $this->status = conversion::STATUS_FAILED;
             }
-
         }
         $conversion->update();
 
         // Trigger event.
-        list($context, $course, $cm) = get_context_info_array($file->get_contextid());
-        $eventinfo = array(
+        [$context, $course, $cm] = get_context_info_array($file->get_contextid());
+        $eventinfo = [
             'context' => $context,
             'courseid' => $course->id,
-            'other' => array(
+            'other' => [
                 'sourcefileid' => $conversion->get('sourcefileid'),
                 'bucket' => $this->config->s3_output_bucket,
                 'key' => $file->get_pathnamehash(),
                 'targetformat' => $conversion->get('targetformat'),
                 'id' => $conversion->get('id'),
-                'status' => $this->status
-            ));
+                'status' => $this->status,
+            ],
+        ];
         $event = \fileconverter_librelambda\event\poll_conversion_status::create($eventinfo);
         $event->trigger();
 
         return $this;
-
     }
 
     /**
@@ -436,9 +438,9 @@ class converter implements \core_files\converter_interface {
      * @return  string
      */
     public function get_supported_conversions() {
-        $conversions = array(
-            'doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt', 'ods', 'txt', 'png', 'jpg', 'gif', 'pdf'
-            );
+        $conversions = [
+            'doc', 'docx', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'odt', 'ods', 'txt', 'png', 'jpg', 'gif', 'pdf',
+            ];
         return implode(', ', $conversions);
     }
 
@@ -541,7 +543,7 @@ class converter implements \core_files\converter_interface {
         // Check that we can access the input S3 Bucket.
         $connection = $this->is_bucket_accessible($this->config->s3_input_bucket);
         if (!$connection->success) {
-            $message = get_string('settings:aws:input_bucket', 'fileconverter_librelambda') .': '. $connection->message;
+            $message = get_string('settings:aws:input_bucket', 'fileconverter_librelambda') . ': ' . $connection->message;
             $result->message = $message;
             $result->success = false;
             return $result;
@@ -550,7 +552,7 @@ class converter implements \core_files\converter_interface {
         // Check that we can access the output S3 Bucket.
         $connection = $this->is_bucket_accessible($this->config->s3_output_bucket);
         if (!$connection->success) {
-            $message = get_string('settings:aws:output_bucket', 'fileconverter_librelambda') .': '.$connection->message;
+            $message = get_string('settings:aws:output_bucket', 'fileconverter_librelambda') . ': ' . $connection->message;
             $result->message = $message;
             $result->success = false;
             return $result;
@@ -560,7 +562,7 @@ class converter implements \core_files\converter_interface {
         $bucket = $this->config->s3_input_bucket;
         $permissions = $this->have_bucket_permissions($bucket);
         if (!$permissions->success) {
-            $message = get_string('settings:aws:input_bucket', 'fileconverter_librelambda') .': '. $connection->message;
+            $message = get_string('settings:aws:input_bucket', 'fileconverter_librelambda') . ': ' . $connection->message;
             $result->message = $message;
             $result->success = false;
             return $result;
@@ -570,7 +572,7 @@ class converter implements \core_files\converter_interface {
         $bucket = $this->config->s3_output_bucket;
         $permissions = $this->have_bucket_permissions($bucket);
         if (!$permissions->success) {
-            $message = get_string('settings:aws:output_bucket', 'fileconverter_librelambda') .': '.$connection->message;
+            $message = get_string('settings:aws:output_bucket', 'fileconverter_librelambda') . ': ' . $connection->message;
             $result->message = $message;
             $result->success = false;
             return $result;

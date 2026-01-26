@@ -27,14 +27,14 @@ defined('MOODLE_INTERNAL') || die();
 
 /* List of handlers */
 
-$tasks = array(
-    array(
+$tasks = [
+    [
         'classname' => 'fileconverter_librelambda\task\convert_submissions',
         'blocking' => 0,
         'minute' => '*',
         'hour' => '*',
         'day' => '*',
         'dayofweek' => '*',
-        'month' => '*'
-    ),
-);
+        'month' => '*',
+    ],
+];
