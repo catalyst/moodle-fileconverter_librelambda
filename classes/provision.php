@@ -346,7 +346,7 @@ class provision {
             return (object) array_merge((array) $result, $outputs);
         } catch (AwsException $e) {
             $result->status = false;
-            $result->message = $e->getMessage() . ": " . $e->getAwsErrorMessage();
+            $result->message = clean_param($e->getMessage() . ": " . $e->getAwsErrorMessage(), PARAM_TEXT);
             return $result;
         }
     }
@@ -461,7 +461,7 @@ class provision {
             $this->remove_resource_bucket();
         } catch (AwsException $e) {
             $result->status = false;
-            $result->message = $e->getMessage() . ": " . $e->getAwsErrorMessage();
+            $result->message = clean_param($e->getMessage() . ": " . $e->getAwsErrorMessage(), PARAM_TEXT);
         }
 
         return $result;
