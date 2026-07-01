@@ -66,8 +66,8 @@ Options:
 
 Example:
 \$sudo -u www-data php files/converter/librelambda/cli/test.php \
---keyid=QKIAIVYPO6FXJESSW4HQ \
---secret=CzI0r0FvPf/TqPwCoiPOdhztEkvkyULbWike1WqA \
+--keyid=YOUR_AWS_ACCESS_KEY_ID \
+--secret=YOUR_AWS_SECRET_ACCESS_KEY \
 --region=ap-southeast-2 \
 --input-bucket=librelambda_input \
 --output-bucket=librelambda_output \
