@@ -56,8 +56,8 @@ Options:
 
 Example:
 \$sudo -u www-data php files/converter/librelambda/cli/provision.php \
---keyid=QKIAIVYPO6FXJESSW4HQ \
---secret=CzI0r0FvPf/TqPwCoiPOdhztEkvkyULbWike1WqA \
+--keyid=YOUR_AWS_ACCESS_KEY_ID \
+--secret=YOUR_AWS_SECRET_ACCESS_KEY \
 --region=ap-southeast-2 \
 --set-config
 ";
@@ -82,7 +82,7 @@ function abort(string $msg) {
 function os_exec(string $command) {
     exec($command, $output, $retval);
     if ($retval != 0) {
-        abort("$command failed:\n" . implode("\n", $output));
+        abort("Command failed:\n" . implode("\n", $output));
     }
 }
 
@@ -109,14 +109,23 @@ if ($unrecognized) {
     $unrecognized = implode("\n  ", $unrecognized);
     cli_error(get_string('cliunknowoption', 'admin', $unrecognized));
 }
+$keyid = getenv('AWS_ACCESS_KEY_ID') ?: ($options['keyid'] ?? null);
+$secret = getenv('AWS_SECRET_ACCESS_KEY') ?: ($options['secret'] ?? null);
 
-if ($options['help'] || !$options['keyid'] || !$options['secret'] || !$options['region']) {
+if (!$keyid || !$secret) {
+    abort("AWS credentials required. Set AWS_ACCESS_KEY_ID /
+AWS_SECRET_ACCESS_KEY env vars,\n"
+        . "or pass --keyid and --secret (note: args visible in ps
+aux).\n\n$help");
+}
+
+if ($options['help'] || !$options['region']) {
     abort($help);
 }
 
 $provisioner = new \fileconverter_librelambda\provision(
-    $options['keyid'],
-    $options['secret'],
+    $keyid,
+    $secret,
     $options['region'],
     $options['stack-name']
 );
@@ -157,9 +166,9 @@ if (!$options['replace-stack'] && $stackexists) {
 $repo = "https://github.com/catalyst/moodle-fileconverter_librelambda-aws_stack.git";
 $stackdir = sys_get_temp_dir() . '/fileconverter_librelambda-aws_stack';
 if (!is_dir($stackdir)) {
-    os_exec("git clone $repo $stackdir");
+    os_exec("git clone" . escapeshellarg($repo) . " " . escapeshellarg($stackdir));
 }
-os_exec("cd $stackdir && git pull");
+os_exec("git -C " . escapeshellarg($stackdir) . " pull");
 
 // First we make the Libre archive a zip file so it can be a Lambda layer.
 $librepath = "$stackdir/libre/lo.tar.xz";
