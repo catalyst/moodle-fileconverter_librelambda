@@ -130,12 +130,12 @@ class converter implements \core_files\converter_interface {
      * @return string $details The details of the exception.
      */
     private function get_exception_details($exception) {
-        $message = $exception->getMessage();
+        $message = clean_param($exception->getMessage(), PARAM_TEXT);
         if (get_class($exception) !== 'S3Exception') {
             return "Not a S3 exception: $message";
         }
 
-        $errorcode = $exception->getAwsErrorCode();
+        $errorcode = clean_param($exception->getAwsErrorCode(), PARAM_ALPHANUMEXT);
 
         $details = ' ';
 
@@ -290,7 +290,10 @@ class converter implements \core_files\converter_interface {
         $converter->create_client();
         $result = $converter->check_requirements();
         if (!$result->success) {
-            debugging($result->message);
+            debugging('settings:connectionfailure', 'fileconverter_librelambda', DEBUG_NORMAL);
+            if (debugging('', DEBUG_DEVELOPER)) {
+                error_log('fileconverter_librelambda connection error: ' . clean_param($result->message, PARAM_TEXT));
+            }
         }
         return $result->success;
     }
