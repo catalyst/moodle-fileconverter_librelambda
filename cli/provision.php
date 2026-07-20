@@ -164,7 +164,7 @@ if (!$options['replace-stack'] && $stackexists) {
 $repo = "https://github.com/catalyst/moodle-fileconverter_librelambda-aws_stack.git";
 $stackdir = sys_get_temp_dir() . '/fileconverter_librelambda-aws_stack';
 if (!is_dir($stackdir)) {
-    os_exec("git clone" . escapeshellarg($repo) . " " . escapeshellarg($stackdir));
+    os_exec("git clone " . escapeshellarg($repo) . " " . escapeshellarg($stackdir));
 }
 os_exec("git -C " . escapeshellarg($stackdir) . " pull");
 
