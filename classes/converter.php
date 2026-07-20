@@ -290,7 +290,7 @@ class converter implements \core_files\converter_interface {
         $converter->create_client();
         $result = $converter->check_requirements();
         if (!$result->success) {
-            debugging('settings:connectionfailure', 'fileconverter_librelambda', DEBUG_NORMAL);
+            debugging(get_string('settings:connectionfailure', 'fileconverter_librelambda'), DEBUG_NORMAL);
             if (debugging('', DEBUG_DEVELOPER)) {
                 error_log('fileconverter_librelambda connection error: ' . clean_param($result->message, PARAM_TEXT));
             }
