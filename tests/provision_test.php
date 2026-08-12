@@ -211,7 +211,7 @@ class provision_test extends \advanced_testcase {
      */
     private function check_aws_stack(): string {
         $repo = "https://github.com/catalyst/moodle-fileconverter_librelambda-aws_stack.git";
-        $stackdir = sys_get_temp_dir() . '/fileconverter_librelambda-aws_stack';
+        $stackdir = \fileconverter_librelambda\provision::get_stack_dir();
         if (!is_dir($stackdir)) {
             $this->markTestSkipped(implode("\n", [
                 "$stackdir not found.",

@@ -257,7 +257,8 @@ class tester {
         }
 
         // Check mime type of downloaded object.
-        $tmppath = tempnam(sys_get_temp_dir(), 'converted').'.pdf';
+        $tmppath = \fileconverter_librelambda\provision::get_temp_dir();
+        $tmppath = tempnam($tmppath, 'converted') . '.pdf';
         $tmpfile = fopen($tmppath, 'w');
         fwrite($tmpfile, $getobject['Body']);
         $mimetype = mime_content_type($tmppath);

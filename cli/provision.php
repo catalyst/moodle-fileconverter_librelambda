@@ -162,7 +162,7 @@ if (!$options['replace-stack'] && $stackexists) {
 
 // check out latest moodle-fileconverter_librelambda-aws_stack
 $repo = "https://github.com/catalyst/moodle-fileconverter_librelambda-aws_stack.git";
-$stackdir = sys_get_temp_dir() . '/fileconverter_librelambda-aws_stack';
+$stackdir = \fileconverter_librelambda\provision::get_stack_dir();
 if (!is_dir($stackdir)) {
     os_exec("git clone " . escapeshellarg($repo) . " " . escapeshellarg($stackdir));
 }
@@ -170,7 +170,7 @@ os_exec("git -C " . escapeshellarg($stackdir) . " pull");
 
 // First we make the Libre archive a zip file so it can be a Lambda layer.
 $librepath = "$stackdir/libre/lo.tar.xz";
-$tmpfname = sys_get_temp_dir() . '/lo.zip';
+$tmpfname = \fileconverter_librelambda\provision::get_temp_dir('lo.zip');
 $zip = new ZipArchive();
 $zip->open($tmpfname, ZipArchive::CREATE);
 $zip->addFile($librepath, 'lo.tar.xz');
