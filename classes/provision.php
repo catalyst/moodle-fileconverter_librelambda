@@ -113,6 +113,11 @@ class provision {
     private $useproxy;
 
     /**
+     * Directory name for generated AWS stack files.
+     */
+    const STACK_DIR = 'fileconverter_librelambda-aws_stack';
+
+    /**
      * The constructor for the class
      *
      * @param string $keyid  AWS API Access Key ID.
@@ -152,6 +157,25 @@ class provision {
      */
     public function stack_name() {
         return $this->stack;
+    }
+
+    /**
+     * Get the temporary directory for the LibreLambda converter.
+     *
+     * @param string|null $subpath Optional subpath within the temporary directory.
+     * @return string Temporary directory path.
+     */
+    public static function get_temp_dir(?string $subpath = null): string {
+        return make_temp_directory('fileconverter_librelambda') . ($subpath ? '/' . $subpath : '');
+    }
+
+    /**
+     * Get the temporary directory for stack files.
+     *
+     * @return string Stack directory path.
+     */
+    public static function get_stack_dir(): string {
+        return self::get_temp_dir(self::STACK_DIR);
     }
 
     /**
